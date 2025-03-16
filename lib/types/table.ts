@@ -12,6 +12,7 @@ import { OS2Table } from "./tables/OS_2";
 import { PostTable } from "./tables/post";
 import { VheaTable } from "./tables/vhea";
 import { VmtxTable } from "./tables/vmtx";
+import { VorgTable } from "./tables/VORG";
 
 /**
  * テーブルパーサー関数の型定義
@@ -37,6 +38,7 @@ export interface KnownTableTypeMap {
 	'hmtx': HmtxTable;
 	'vmtx': VmtxTable;
 	'DSIG': DsigTable;
+	'VORG': VorgTable;
 	// 他のテーブルの型をここに追加
 }
 

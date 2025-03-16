@@ -19,6 +19,7 @@ import { parseHmtxTable } from './hmtx';
 import { parseVmtxTable } from './vmtx';
 import { ArrayBufferRef } from '../utils/array-buffer-ref';
 import { parseDsigTable } from './DSIG';
+import { parseVorgTable } from './VORG';
 
 /**
  * テーブル名とパーサー関数のマッピング
@@ -35,6 +36,7 @@ export const tableParsers: { [tag: string]: TableParser } = {
 	'hmtx': parseHmtxTable,
 	'vmtx': parseVmtxTable,
 	'DSIG': parseDsigTable,
+	'VORG': parseVorgTable,
 	// 他のテーブルのパーサーをここに追加
 };
 

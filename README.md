@@ -46,8 +46,6 @@ OpenType、TrueTypeのフォントのパーサをTypeScriptを使用してNode.j
 # MSの仕様に存在し未実装のタグ
 
 - avar
-- BASE
-	- バグフィックス中
 - CBDT
 - CBLC
 - CFF
@@ -82,3 +80,9 @@ OpenType、TrueTypeのフォントのパーサをTypeScriptを使用してNode.j
 - SVG
 - VDMX
 - VVAR
+
+# テスト
+
+```bash
+npm run dev fonts/NotoSansCJKjp-Regular.otf
+```

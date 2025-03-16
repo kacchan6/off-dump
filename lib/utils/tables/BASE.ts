@@ -8,7 +8,9 @@ import {
 	BaseVersion,
 	BaselineTag,
 	BaseAxisTable,
-	BaseCoordinateRecord
+	BaseScriptRecord,
+	BaseValuesTable,
+	BaseCoordTable
 } from '../../types/tables/BASE';
 
 /**
@@ -56,8 +58,7 @@ export function getBaseSummary(font: Font): object | null {
 	}
 
 	const summary: any = {
-		version: baseTable.version === BaseVersion.VERSION_1_0 ? '1.0' : 'Unknown',
-		scriptCount: baseTable.scriptList.length
+		version: baseTable.version === BaseVersion.VERSION_1_0 ? '1.0' : '1.1'
 	};
 
 	// 水平軸情報
@@ -81,60 +82,67 @@ export function getBaseSummary(font: Font): object | null {
  */
 export function analyzeBaseAxisTable(axisTable: BaseAxisTable): object {
 	const analysis: any = {
-		baseCoordinate: axisTable.baseCoordTable.defaultCoordinate
+		baselineTags: axisTable.baseTagList.baselineTags,
+		scriptCount: axisTable.baseScriptList.length
 	};
 
-	// 特定スクリプトや言語の座標レコードを分析
-	if (axisTable.baseCoordTable.coordinateRecords) {
-		analysis.coordinateRecordCount = axisTable.baseCoordTable.coordinateRecords.length;
-		analysis.coordinateRecords = axisTable.baseCoordTable.coordinateRecords.map(analyzeCoordinateRecord);
-	}
+	// スクリプト情報を追加
+	analysis.scripts = axisTable.baseScriptList.map(script => ({
+		tag: script.baseScriptTag,
+		hasBaseValues: !!script.baseScript.baseValues,
+		hasDefaultMinMax: !!script.baseScript.defaultMinMax,
+		langSysCount: script.baseScript.baseLangSysRecords?.length || 0
+	}));
 
-	// 最小座標テーブルがある場合
-	if (axisTable.minCoordTable) {
-		analysis.minCoordinate = axisTable.minCoordTable.defaultCoordinate;
-		if (axisTable.minCoordTable.coordinateRecords) {
-			analysis.minCoordinateRecords = axisTable.minCoordTable.coordinateRecords.map(analyzeCoordinateRecord);
-		}
-	}
+	return analysis;
+}
 
-	// 最大座標テーブルがある場合
-	if (axisTable.maxCoordTable) {
-		analysis.maxCoordinate = axisTable.maxCoordTable.defaultCoordinate;
-		if (axisTable.maxCoordTable.coordinateRecords) {
-			analysis.maxCoordinateRecords = axisTable.maxCoordTable.coordinateRecords.map(analyzeCoordinateRecord);
-		}
+/**
+ * 座標テーブルの詳細を分析する
+ * 
+ * @param coordTable 座標テーブル
+ * @returns 座標テーブルの分析結果
+ */
+export function analyzeBaseCoordTable(coordTable: BaseCoordTable): object {
+	const analysis: any = {
+		format: coordTable.baseCoordFormat,
+		coordinate: coordTable.coordinate
+	};
+
+	// フォーマットに応じた追加情報
+	if (coordTable.baseCoordFormat === 2) {
+		analysis.referenceGlyph = coordTable.referenceGlyph;
+		analysis.baselineIndex = coordTable.baselineIndex;
+	} else if (coordTable.baseCoordFormat === 3 && coordTable.deviceTable) {
+		analysis.hasDeviceTable = true;
+		analysis.deviceTable = {
+			startSize: coordTable.deviceTable.startSize,
+			endSize: coordTable.deviceTable.endSize,
+			deltaFormat: coordTable.deviceTable.deltaFormat
+		};
 	}
 
 	return analysis;
 }
 
 /**
- * 座標レコードの詳細を分析する
+ * ベースライン値テーブルの詳細を分析する
  * 
- * @param record 座標レコード
- * @returns 座標レコードの分析結果
+ * @param valuesTable ベースライン値テーブル
+ * @param tagList ベースラインタグリスト
+ * @returns ベースライン値テーブルの分析結果
  */
-export function analyzeCoordinateRecord(record: BaseCoordinateRecord): object {
+export function analyzeBaseValuesTable(valuesTable: BaseValuesTable, baselineTags: BaselineTag[]): object {
 	const analysis: any = {
-		scriptTag: record.scriptTag,
-		coordinate: record.coordinate
+		defaultBaselineIndex: valuesTable.defaultIndex,
+		defaultBaselineTag: baselineTags[valuesTable.defaultIndex] || 'Unknown'
 	};
 
-	// 言語タグがある場合は追加
-	if (record.languageTag) {
-		analysis.languageTag = record.languageTag;
-	}
-
-	// デバイステーブルがある場合は追加情報を含める
-	if (record.deviceTable) {
-		analysis.deviceTable = {
-			startSize: record.deviceTable.startSize,
-			endSize: record.deviceTable.endSize,
-			deltaFormat: record.deviceTable.deltaFormat,
-			deltaValuesCount: record.deviceTable.deltaValues.length
-		};
-	}
+	// 座標情報を追加
+	analysis.baseCoords = valuesTable.baseCoords.map((coord, index) => ({
+		baselineTag: baselineTags[index] || `Unknown-${index}`,
+		...analyzeBaseCoordTable(coord)
+	}));
 
 	return analysis;
 }
@@ -146,15 +154,35 @@ export function analyzeCoordinateRecord(record: BaseCoordinateRecord): object {
  * @returns ベースラインスクリプトの情報
  */
 export function getBaselineScripts(baseTable: BaseTable): object[] {
-	return baseTable.scriptList.map(script => ({
-		defaultBaselineTag: getBaselineTagDescription(script.defaultBaselineTag),
-		baselineRecords: script.baselineRecords.map(record => ({
-			baselineTag: getBaselineTagDescription(record.baselineTag),
-			anchorFormat: record.baselineAnchor.format,
-			xCoordinate: record.baselineAnchor.xCoordinate,
-			yCoordinate: record.baselineAnchor.yCoordinate
-		}))
-	}));
+	const scripts: object[] = [];
+
+	// 水平軸のスクリプト
+	if (baseTable.horizAxis) {
+		baseTable.horizAxis.baseScriptList.forEach(scriptRecord => {
+			scripts.push({
+				axis: 'horizontal',
+				tag: scriptRecord.baseScriptTag,
+				hasBaseValues: !!scriptRecord.baseScript.baseValues,
+				hasDefaultMinMax: !!scriptRecord.baseScript.defaultMinMax,
+				langSysCount: scriptRecord.baseScript.baseLangSysRecords?.length || 0
+			});
+		});
+	}
+
+	// 垂直軸のスクリプト
+	if (baseTable.vertAxis) {
+		baseTable.vertAxis.baseScriptList.forEach(scriptRecord => {
+			scripts.push({
+				axis: 'vertical',
+				tag: scriptRecord.baseScriptTag,
+				hasBaseValues: !!scriptRecord.baseScript.baseValues,
+				hasDefaultMinMax: !!scriptRecord.baseScript.defaultMinMax,
+				langSysCount: scriptRecord.baseScript.baseLangSysRecords?.length || 0
+			});
+		});
+	}
+
+	return scripts;
 }
 
 /**
@@ -166,17 +194,49 @@ export function getBaselineScripts(baseTable: BaseTable): object[] {
 export function listBaselineTags(baseTable: BaseTable): BaselineTag[] {
 	const tags = new Set<BaselineTag>();
 
-	// デフォルトベースラインタグを追加
-	baseTable.scriptList.forEach(script => {
-		tags.add(script.defaultBaselineTag);
-	});
+	// 水平軸のベースラインタグ
+	if (baseTable.horizAxis && baseTable.horizAxis.baseTagList) {
+		baseTable.horizAxis.baseTagList.baselineTags.forEach(tag => tags.add(tag));
+	}
 
-	// ベースラインレコードからタグを追加
-	baseTable.scriptList.forEach(script => {
-		script.baselineRecords.forEach(record => {
-			tags.add(record.baselineTag);
-		});
-	});
+	// 垂直軸のベースラインタグ
+	if (baseTable.vertAxis && baseTable.vertAxis.baseTagList) {
+		baseTable.vertAxis.baseTagList.baselineTags.forEach(tag => tags.add(tag));
+	}
 
 	return Array.from(tags);
+}
+
+/**
+ * 特定スクリプトのベースライン値を取得する
+ * 
+ * @param baseTable BASEテーブル
+ * @param scriptTag スクリプトタグ (例: 'latn')
+ * @param axisType 軸タイプ ('horizontal' または 'vertical')
+ * @returns ベースライン値の情報
+ */
+export function getScriptBaselineValues(
+	baseTable: BaseTable,
+	scriptTag: string,
+	axisType: 'horizontal' | 'vertical' = 'horizontal'
+): object | null {
+	// 軸テーブルを選択
+	const axisTable = axisType === 'horizontal' ? baseTable.horizAxis : baseTable.vertAxis;
+	if (!axisTable) {
+		return null;
+	}
+
+	// スクリプトを検索
+	const scriptRecord = axisTable.baseScriptList.find(
+		record => record.baseScriptTag === scriptTag
+	);
+	if (!scriptRecord || !scriptRecord.baseScript.baseValues) {
+		return null;
+	}
+
+	// ベースライン値を分析
+	return analyzeBaseValuesTable(
+		scriptRecord.baseScript.baseValues,
+		axisTable.baseTagList.baselineTags
+	);
 }

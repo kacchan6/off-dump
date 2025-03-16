@@ -11,6 +11,8 @@ import { parseUnknownTable } from './unknown';
 import { TableParser } from '../types/table';
 import { parseNameTable } from './name';
 import { parseCmapTable } from './cmap';
+import { parseHheaTable } from './hhea';
+import { parseOS2Table } from './OS_2';
 
 /**
  * テーブル名とパーサー関数のマッピング
@@ -19,6 +21,8 @@ export const tableParsers: { [tag: string]: TableParser } = {
 	'head': parseHeadTable,
 	'name': parseNameTable,
 	'cmap': parseCmapTable,
+	'hhea': parseHheaTable,
+	'OS/2': parseOS2Table,
 	// 他のテーブルのパーサーをここに追加
 };
 

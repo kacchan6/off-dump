@@ -3,7 +3,9 @@ import { DataReader } from "../utils/data-reader";
 import { Font, TableDirectoryEntry } from "./font";
 import { CmapTable } from "./tables/cmap";
 import { HeadTable } from "./tables/head";
+import { HheaTable } from "./tables/hhea";
 import { NameTable } from "./tables/name";
+import { OS2Table } from "./tables/OS_2";
 
 /**
  * テーブルパーサー関数の型定義
@@ -21,6 +23,8 @@ export interface KnownTableTypeMap {
 	'cmap': CmapTable;
 	'head': HeadTable;
 	'name': NameTable;
+	'hhea': HheaTable;
+	'OS_2': OS2Table;
 }
 
 /**

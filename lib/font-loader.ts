@@ -3,7 +3,7 @@
  * フォントファイルの読み込みと解析を行う
  */
 
-import { parseTable } from './tables';
+import { parseTable } from './tables/index';
 import { Font, FontTable, TableDirectoryEntry, TableMetaData } from './types/font';
 import { DataReader } from './utils/data-reader';
 

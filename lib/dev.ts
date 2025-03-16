@@ -9,8 +9,7 @@ import * as path from 'path';
 import { FontLoader } from './font-loader';
 import * as rimraf from 'rimraf';
 import { ArrayBufferRef } from './utils/array-buffer-ref';
-import { generateUnicodeMapObject } from './utils/tables/cmap';
-import { CmapTable } from './types/tables/cmap';
+import { executePlugins } from './utils/output/index';
 
 /**
  * 特殊なデータ型を変換してJSON化可能にする
@@ -88,11 +87,16 @@ function devMain(): void {
 		// 出力ディレクトリを作成
 		const fontBaseName = path.basename(fontPath, path.extname(fontPath));
 		const outputDir = path.join(process.cwd(), 'out', fontBaseName);
+		const tablesDir = path.join(outputDir, 'tables');
 
+		// 既存のディレクトリがあれば削除
 		if (fs.existsSync(outputDir)) {
 			rimraf.sync(outputDir);
 		}
+
+		// ディレクトリ構造を作成
 		fs.mkdirSync(outputDir, { recursive: true });
+		fs.mkdirSync(tablesDir, { recursive: true });
 
 		// フォント情報の抽出
 		fonts.forEach((font, fontIndex) => {
@@ -116,10 +120,16 @@ function devMain(): void {
 			// 各テーブルを個別のJSONファイルに出力
 			for (const [tableName, tableData] of Object.entries(font.tables)) {
 				const tableFileName = `${sanitizeTableName(tableName)}.json`;
-				const tableFilePath = path.join(outputDir, tableFileName);
+				const tableFilePath = path.join(tablesDir, tableFileName);
 
 				fs.writeFileSync(tableFilePath, JSON.stringify(tableData, jsonReplacer, 2));
 				console.log(`Saved table '${tableName}' to ${tableFilePath}`);
+			}
+
+			// プラグインを実行
+			const successCount = executePlugins(font, outputDir);
+			if (successCount > 0) {
+				console.log(`${successCount} output plugins executed successfully.`);
 			}
 		});
 

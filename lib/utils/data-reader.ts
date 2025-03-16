@@ -8,7 +8,7 @@
 /**
  * エンディアンの種類
  */
-export enum Endian {
+export const enum Endian {
 	BIG = 'big-endian',
 	LITTLE = 'little-endian'
 }

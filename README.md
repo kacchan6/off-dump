@@ -86,3 +86,21 @@ OpenType、TrueTypeのフォントのパーサをTypeScriptを使用してNode.j
 ```bash
 npm run dev fonts/NotoSansCJKjp-Regular.otf
 ```
+
+# プロンプト
+
+CFFとCFF2のパーサを作りたいです。まだ作らなくて良いです。
+
+
+https://learn.microsoft.com/en-us/typography/opentype/spec/cff
+
+https://learn.microsoft.com/en-us/typography/opentype/spec/cff2
+
+https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf
+
+https://adobe-type-tools.github.io/font-tech-notes/pdfs/5177.Type2.pdf
+
+https://learn.microsoft.com/en-us/typography/opentype/spec/glyphformatcomparison
+
+
+これらの仕様から作ることは可能ですか。日本語で回答してください。

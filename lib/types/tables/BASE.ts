@@ -10,7 +10,7 @@ import { DeviceTable } from '../common';
 /**
  * BASEテーブルのバージョン
  */
-export enum BaseVersion {
+export const enum BaseVersion {
 	VERSION_1_0 = 0x00010000, // バージョン1.0
 	VERSION_1_1 = 0x00010001, // バージョン1.1
 }
@@ -18,7 +18,7 @@ export enum BaseVersion {
 /**
  * ベースラインテーブルのタグ
  */
-export enum BaselineTag {
+export const enum BaselineTag {
 	ROMAN = 'romn',        // ラテン文字のベースライン
 	HANGING = 'hang',      // ぶら下げベースライン
 	IDEOGRAPHIC = 'ideo',  // 漢字などのイデオグラフィックベースライン

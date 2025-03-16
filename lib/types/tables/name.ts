@@ -18,7 +18,7 @@ export enum PlatformID {
 /**
  * Unicodeプラットフォームでのエンコーディングの種類
  */
-export enum UnicodeEncodingID {
+export const enum UnicodeEncodingID {
 	UNICODE_1_0 = 0,
 	UNICODE_1_1 = 1,
 	ISO_10646 = 2,

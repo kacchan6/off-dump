@@ -10,7 +10,7 @@ import { DataReader } from './utils/data-reader';
 /**
  * フォントタイプ
  */
-enum FontType {
+const enum FontType {
 	UNKNOWN = 0,
 	TTC = 1,
 	TRUETYPE = 2,

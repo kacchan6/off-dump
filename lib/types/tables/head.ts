@@ -7,7 +7,7 @@
 /**
  * フォントヘッダーフラグ
  */
-export enum HeadFlags {
+export const enum HeadFlags {
 	BASELINE_AT_0 = 0x0001,
 	LEFT_SIDEBEARING_AT_0 = 0x0002,
 	INSTRUCTIONS_DEPEND_ON_POINT_SIZE = 0x0004,
@@ -23,7 +23,7 @@ export enum HeadFlags {
 /**
  * フォントのマクロスタイル
  */
-export enum MacStyle {
+export const enum MacStyle {
 	BOLD = 0x0001,
 	ITALIC = 0x0002,
 	UNDERLINE = 0x0004,

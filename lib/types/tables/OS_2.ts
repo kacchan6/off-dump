@@ -7,7 +7,7 @@
 /**
  * フォントの重さ（Weight Class）
  */
-export enum OS2WeightClass {
+export const enum OS2WeightClass {
 	THIN = 100,
 	EXTRA_LIGHT = 200,
 	LIGHT = 300,
@@ -22,7 +22,7 @@ export enum OS2WeightClass {
 /**
  * フォントの幅（Width Class）
  */
-export enum OS2WidthClass {
+export const enum OS2WidthClass {
 	ULTRA_CONDENSED = 1,
 	EXTRA_CONDENSED = 2,
 	CONDENSED = 3,
@@ -37,7 +37,7 @@ export enum OS2WidthClass {
 /**
  * フォントタイプ（fsType）
  */
-export enum OS2FSType {
+export const enum OS2FSType {
 	// ビットフラグの定義
 	RESTRICTED_LICENSE_EMBEDDING = 0x0002,
 	PREVIEW_AND_PRINT_EMBEDDING = 0x0004,
@@ -49,7 +49,7 @@ export enum OS2FSType {
 /**
  * フォント選択フラグ（fsSelection）
  */
-export enum OS2FSSelection {
+export const enum OS2FSSelection {
 	ITALIC = 0x0001,
 	UNDERSCORE = 0x0002,
 	NEGATIVE = 0x0004,

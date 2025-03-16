@@ -10,7 +10,7 @@ import { ClassDefTable } from '../common';
 /**
  * GPOS テーブルのバージョン
  */
-export enum GposVersion {
+export const enum GposVersion {
 	VERSION_1_0 = 0x00010000, // 1.0
 	VERSION_1_1 = 0x00010001  // 1.1
 }
@@ -79,7 +79,7 @@ export interface GposTable {
 /**
  * GPOSのLookupタイプ
  */
-export enum GposLookupType {
+export const enum GposLookupType {
 	SINGLE_ADJUSTMENT = 1,     // 単一位置調整
 	PAIR_ADJUSTMENT = 2,       // ペア位置調整
 	CURSIVE_ATTACHMENT = 3,    // 筆記体接続
@@ -183,7 +183,7 @@ export interface ValueRecord {
 /**
  * 値フォーマット - 有効な値レコードフィールドを示すビットマスク
  */
-export enum ValueFormat {
+export const enum ValueFormat {
 	X_PLACEMENT = 0x0001,         // xPlacement
 	Y_PLACEMENT = 0x0002,         // yPlacement
 	X_ADVANCE = 0x0004,           // xAdvance

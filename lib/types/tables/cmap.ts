@@ -47,7 +47,7 @@ export interface CmapEncodingRecord {
 /**
  * プラットフォームID
  */
-export enum CmapPlatformID {
+export const enum CmapPlatformID {
 	UNICODE = 0,
 	MACINTOSH = 1,
 	RESERVED = 2,
@@ -57,7 +57,7 @@ export enum CmapPlatformID {
 /**
  * Unicodeプラットフォームのエンコーディングid
  */
-export enum CmapUnicodeEncodingID {
+export const enum CmapUnicodeEncodingID {
 	UNICODE_1_0 = 0,
 	UNICODE_1_1 = 1,
 	ISO_10646 = 2,
@@ -70,7 +70,7 @@ export enum CmapUnicodeEncodingID {
 /**
  * Windowsプラットフォームのエンコーディングid
  */
-export enum CmapWindowsEncodingID {
+export const enum CmapWindowsEncodingID {
 	SYMBOL = 0,
 	UNICODE_BMP = 1,
 	SHIFT_JIS = 2,
@@ -84,7 +84,7 @@ export enum CmapWindowsEncodingID {
 /**
  * Macintoshプラットフォームのエンコーディングid
  */
-export enum CmapMacintoshEncodingID {
+export const enum CmapMacintoshEncodingID {
 	ROMAN = 0,
 	JAPANESE = 1,
 	CHINESE_TRADITIONAL = 2,
@@ -123,7 +123,7 @@ export enum CmapMacintoshEncodingID {
 /**
  * cmapサブテーブルのフォーマット
  */
-export enum CmapFormat {
+export const enum CmapFormat {
 	BYTE_ENCODING = 0,          // 非推奨
 	HIGH_BYTE_MAPPING = 2,      // 非推奨
 	SEGMENT_MAPPING = 4,

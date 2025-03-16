@@ -10,7 +10,7 @@ import { ClassDefTable } from '../common';
 /**
  * GSUB テーブルのバージョン
  */
-export enum GsubVersion {
+export const enum GsubVersion {
 	VERSION_1_0 = 0x00010000, // 1.0
 	VERSION_1_1 = 0x00010001  // 1.1
 }
@@ -79,7 +79,7 @@ export interface GsubTable {
 /**
  * GSUBのLookupタイプ
  */
-export enum GsubLookupType {
+export const enum GsubLookupType {
 	SINGLE = 1,                      // 単一置換
 	MULTIPLE = 2,                    // 複数置換
 	ALTERNATE = 3,                   // 代替置換

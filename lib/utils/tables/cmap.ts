@@ -3,7 +3,6 @@
  */
 
 import {
-	AnyCmapSubtable,
 	CmapTable, CmapEncodingRecord, CmapFormat,
 	CmapFormat0Subtable, CmapFormat4Subtable, CmapFormat6Subtable,
 	CmapFormat12Subtable, CmapPlatformID, CmapWindowsEncodingID,
@@ -17,63 +16,63 @@ import {
 /**
  * サブテーブルがCmapFormat0Subtable型かどうかを判定する型ガード
  */
-export function isCmapFormat0(subtable: AnyCmapSubtable): subtable is CmapFormat0Subtable {
+export function isCmapFormat0(subtable: CmapSubtable): subtable is CmapFormat0Subtable {
 	return subtable.format === CmapFormat.BYTE_ENCODING;
 }
 
 /**
  * サブテーブルがCmapFormat2Subtable型かどうかを判定する型ガード
  */
-export function isCmapFormat2(subtable: AnyCmapSubtable): subtable is CmapFormat2Subtable {
+export function isCmapFormat2(subtable: CmapSubtable): subtable is CmapFormat2Subtable {
 	return subtable.format === CmapFormat.HIGH_BYTE_MAPPING;
 }
 
 /**
  * サブテーブルがCmapFormat4Subtable型かどうかを判定する型ガード
  */
-export function isCmapFormat4(subtable: AnyCmapSubtable): subtable is CmapFormat4Subtable {
+export function isCmapFormat4(subtable: CmapSubtable): subtable is CmapFormat4Subtable {
 	return subtable.format === CmapFormat.SEGMENT_MAPPING;
 }
 
 /**
  * サブテーブルがCmapFormat6Subtable型かどうかを判定する型ガード
  */
-export function isCmapFormat6(subtable: AnyCmapSubtable): subtable is CmapFormat6Subtable {
+export function isCmapFormat6(subtable: CmapSubtable): subtable is CmapFormat6Subtable {
 	return subtable.format === CmapFormat.TRIMMED_TABLE_MAPPING;
 }
 
 /**
  * サブテーブルがCmapFormat8Subtable型かどうかを判定する型ガード
  */
-export function isCmapFormat8(subtable: AnyCmapSubtable): subtable is CmapFormat8Subtable {
+export function isCmapFormat8(subtable: CmapSubtable): subtable is CmapFormat8Subtable {
 	return subtable.format === CmapFormat.MIXED_16_32_BIT_MAPPING;
 }
 
 /**
  * サブテーブルがCmapFormat10Subtable型かどうかを判定する型ガード
  */
-export function isCmapFormat10(subtable: AnyCmapSubtable): subtable is CmapFormat10Subtable {
+export function isCmapFormat10(subtable: CmapSubtable): subtable is CmapFormat10Subtable {
 	return subtable.format === CmapFormat.TRIMMED_ARRAY;
 }
 
 /**
  * サブテーブルがCmapFormat12Subtable型かどうかを判定する型ガード
  */
-export function isCmapFormat12(subtable: AnyCmapSubtable): subtable is CmapFormat12Subtable {
+export function isCmapFormat12(subtable: CmapSubtable): subtable is CmapFormat12Subtable {
 	return subtable.format === CmapFormat.SEGMENTED_COVERAGE;
 }
 
 /**
  * サブテーブルがCmapFormat13Subtable型かどうかを判定する型ガード
  */
-export function isCmapFormat13(subtable: AnyCmapSubtable): subtable is CmapFormat13Subtable {
+export function isCmapFormat13(subtable: CmapSubtable): subtable is CmapFormat13Subtable {
 	return subtable.format === CmapFormat.MANY_TO_ONE_RANGE_MAPPINGS;
 }
 
 /**
  * サブテーブルがCmapFormat14Subtable型かどうかを判定する型ガード
  */
-export function isCmapFormat14(subtable: AnyCmapSubtable): subtable is CmapFormat14Subtable {
+export function isCmapFormat14(subtable: CmapSubtable): subtable is CmapFormat14Subtable {
 	return subtable.format === CmapFormat.UNICODE_VARIATION_SEQUENCES;
 }
 
@@ -155,7 +154,7 @@ export function getPreferredUnicodeEncodingRecord(cmap: CmapTable): CmapEncoding
  * @param subtable cmapサブテーブル
  * @param charCode 文字コード
  */
-export function getGlyphIDFromSubtable(subtable: AnyCmapSubtable, charCode: number): number {
+export function getGlyphIDFromSubtable(subtable: CmapSubtable, charCode: number): number {
 	switch (subtable.format) {
 		case CmapFormat.BYTE_ENCODING:
 			if (isCmapFormat0(subtable)) {
@@ -585,7 +584,7 @@ export function getEncodingRecordSummary(record: CmapEncodingRecord): string {
  * 
  * @param subtable cmapサブテーブル
  */
-export function getSubtableCodepointRange(subtable: AnyCmapSubtable): { min: number, max: number } {
+export function getSubtableCodepointRange(subtable: CmapSubtable): { min: number, max: number } {
 	switch (subtable.format) {
 		case CmapFormat.BYTE_ENCODING:
 			if (isCmapFormat0(subtable)) {

@@ -46,7 +46,10 @@ export interface BaseAnchor {
 	/**
 	 * デバイステーブル（オプション）
 	 */
-	deviceTable?: DeviceTable;
+	deviceTable?: {
+		xDeviceTable?: DeviceTable;
+		yDeviceTable?: DeviceTable;
+	};
 }
 
 /**

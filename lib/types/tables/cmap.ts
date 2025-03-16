@@ -41,7 +41,7 @@ export interface CmapEncodingRecord {
 	/**
 	 * 解析されたサブテーブル
 	 */
-	subtable?: AnyCmapSubtable;
+	subtable?: CmapSubtable;
 }
 
 /**
@@ -631,20 +631,6 @@ export interface CmapUVSMapping {
 	 */
 	glyphID: number;
 }
-
-/**
- * 任意のcmapサブテーブル型（型ガード用）
- */
-export type AnyCmapSubtable =
-	CmapFormat0Subtable |
-	CmapFormat2Subtable |
-	CmapFormat4Subtable |
-	CmapFormat6Subtable |
-	CmapFormat8Subtable |
-	CmapFormat10Subtable |
-	CmapFormat12Subtable |
-	CmapFormat13Subtable |
-	CmapFormat14Subtable;
 
 /**
  * cmapテーブル全体

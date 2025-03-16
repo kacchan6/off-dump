@@ -28,10 +28,20 @@ import { parseDeviceTable } from './gposgsub/common';
  * @returns アンカーテーブル
  */
 function parseBaseAnchor(reader: DataReader, offset: number): BaseAnchor {
+	// オフセットが有効範囲内かどうかをチェック
+	if (offset === 0 || offset >= reader.getBuffer().byteLength) {
+		// 無効なオフセットの場合はデフォルトのアンカーを返す
+		return {
+			format: 1,
+			xCoordinate: 0,
+			yCoordinate: 0
+		};
+	}
+
 	reader.save();
 	reader.seek(offset);
 
-	// アンカーフォーマットを読み取る
+	// 既存のパース処理...（以下は変更なし）
 	const format = reader.readUInt16();
 	const xCoordinate = reader.readInt16();
 	const yCoordinate = reader.readInt16();
@@ -48,12 +58,19 @@ function parseBaseAnchor(reader: DataReader, offset: number): BaseAnchor {
 		const yDeviceOffset = reader.readUInt16();
 
 		// デバイステーブルを解析（オフセットが0でない場合）
-		const deviceTable = xDeviceOffset !== 0
+		const xDeviceTable = xDeviceOffset !== 0
 			? parseDeviceTable(reader, offset + xDeviceOffset)
 			: undefined;
+		const yDeviceTable = yDeviceOffset !== 0
+			? parseDeviceTable(reader, offset + yDeviceOffset)
+			: undefined;
 
-		if (deviceTable) {
-			anchor.deviceTable = deviceTable;
+		// アンカーにデバイステーブルを追加
+		if (xDeviceTable || yDeviceTable) {
+			anchor.deviceTable = {
+				xDeviceTable: xDeviceTable || undefined,
+				yDeviceTable: yDeviceTable || undefined
+			};
 		}
 	}
 
@@ -159,14 +176,22 @@ function parseBaseAxisTable(reader: DataReader, offset: number): BaseAxisTable {
  * @param offset スクリプトテーブルへのオフセット
  * @returns スクリプトテーブル
  */
+
 function parseBaseScriptTable(reader: DataReader, offset: number): BaseScriptTable {
+	// オフセットが有効範囲内かどうかをチェック
+	if (offset === 0 || offset >= reader.getBuffer().byteLength) {
+		// 無効なオフセットの場合は空のスクリプトテーブルを返す
+		return {
+			defaultBaselineTag: BaselineTag.ROMAN,
+			baselineRecords: []
+		};
+	}
+
 	reader.save();
 	reader.seek(offset);
 
-	// デフォルトベースラインタグを読み取る
+	// 既存のパース処理...（以下は変更なし）
 	const defaultBaselineTag = reader.readTag() as BaselineTag;
-
-	// ベースラインレコードカウントを読み取る
 	const baselineRecordCount = reader.readUInt16();
 	const baselineRecords: BaselineRecord[] = [];
 
@@ -224,7 +249,10 @@ export function parseBaseTable(
 
 	// 各スクリプトを解析
 	for (const scriptOffset of scriptOffsets) {
-		scriptList.push(parseBaseScriptTable(reader, scriptOffset));
+		// オフセットが有効範囲内かどうかをチェック
+		if (scriptOffset >= entry.offset && scriptOffset < entry.offset + entry.length) {
+			scriptList.push(parseBaseScriptTable(reader, scriptOffset));
+		}
 	}
 
 	// 結果オブジェクトを構築
@@ -235,13 +263,15 @@ export function parseBaseTable(
 	};
 
 	// 水平軸テーブルがある場合
-	if (horizAxisOffset !== 0) {
+	if (horizAxisOffset !== 0 &&
+		entry.offset + horizAxisOffset < entry.offset + entry.length) {
 		baseTable.horizAxisOffset = horizAxisOffset;
 		baseTable.horizAxis = parseBaseAxisTable(reader, entry.offset + horizAxisOffset);
 	}
 
 	// 垂直軸テーブルがある場合
-	if (vertAxisOffset !== 0) {
+	if (vertAxisOffset !== 0 &&
+		entry.offset + vertAxisOffset < entry.offset + entry.length) {
 		baseTable.vertAxisOffset = vertAxisOffset;
 		baseTable.vertAxis = parseBaseAxisTable(reader, entry.offset + vertAxisOffset);
 	}

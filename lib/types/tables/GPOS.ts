@@ -5,7 +5,7 @@
  * 参照: https://learn.microsoft.com/ja-jp/typography/opentype/spec/gpos
  */
 
-import { ClassDefTable, FeatureTable, LookupTable, ScriptTable } from '../common';
+import { ClassDefTable } from '../common';
 
 /**
  * GPOS テーブルのバージョン
@@ -58,12 +58,12 @@ export interface GposTable {
 	/**
 	 * スクリプトリスト
 	 */
-	scriptList: ScriptTable[];
+	scriptList: any[];
 
 	/**
 	 * 機能リスト
 	 */
-	featureList: FeatureTable[];
+	featureList: any[];
 
 	/**
 	 * ルックアップリスト
@@ -94,11 +94,26 @@ export enum GposLookupType {
 /**
  * GPOS Lookupテーブル
  */
-export interface GposLookupTable extends LookupTable {
+export interface GposLookupTable {
 	/**
 	 * ルックアップタイプ
 	 */
 	lookupType: GposLookupType;
+
+	/**
+	 * ルックアップフラグ
+	 */
+	lookupFlag: number;
+
+	/**
+	 * サブテーブルの数
+	 */
+	subTableCount: number;
+
+	/**
+	 * マークフィルタリングセット（ルックアップフラグに依存）
+	 */
+	markFilteringSet?: number;
 
 	/**
 	 * サブテーブル
@@ -286,12 +301,12 @@ export interface PairAdjustmentSubtable {
 	/**
 	 * クラス定義テーブル1（フォーマット2）
 	 */
-	classDef1?: number[];
+	classDef1?: ClassDefTable;
 
 	/**
 	 * クラス定義テーブル2（フォーマット2）
 	 */
-	classDef2?: number[];
+	classDef2?: ClassDefTable;
 
 	/**
 	 * クラス1の数（フォーマット2）
@@ -1146,7 +1161,7 @@ export interface ChainContextualPositioningFormat3Subtable extends ChainedContex
 }
 
 /**
- * 拡張配置サブテーブル (Lookup Type 9)
+ * 拡張位置調整サブテーブル (Lookup Type 9)
  */
 export interface ExtensionPositioningSubtable {
 	/**

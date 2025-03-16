@@ -1,0 +1,31 @@
+{
+  "name": "otf-dump",
+  "version": "0.1.0",
+  "description": "OpenType Font dumping utility",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "watch": "rimraf dist && tsc --watch",
+    "dev": "node dist/dev.js"
+  },
+  "keywords": [
+    "opentype",
+    "font",
+    "otf",
+    "dump",
+    "parser"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.8.2",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.2.2"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}

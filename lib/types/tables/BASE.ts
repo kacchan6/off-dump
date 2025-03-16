@@ -11,7 +11,8 @@ import { DeviceTable } from '../common';
  * BASEテーブルのバージョン
  */
 export enum BaseVersion {
-	VERSION_1_0 = 0x00010000 // バージョン1.0
+	VERSION_1_0 = 0x00010000, // バージョン1.0
+	VERSION_1_1 = 0x00010001, // バージョン1.1
 }
 
 /**
@@ -21,7 +22,7 @@ export enum BaselineTag {
 	ROMAN = 'romn',        // ラテン文字のベースライン
 	HANGING = 'hang',      // ぶら下げベースライン
 	IDEOGRAPHIC = 'ideo',  // 漢字などのイデオグラフィックベースライン
-	MATHEMATICAL = 'math'  // 数学記号のベースライン
+	MATHEMATICAL = 'math', // 数学記号のベースライン
 }
 
 /**
@@ -160,6 +161,11 @@ export interface BaseTable {
 	 * 垂直座標テーブル（オプション）
 	 */
 	vertAxis?: BaseAxisTable;
+
+	/**
+	 * バリエーションストアへのオフセット（バージョン1.1の場合のみ）
+	 */
+	itemVarStoreOffset?: number;
 }
 
 /**

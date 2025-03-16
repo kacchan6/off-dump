@@ -42,3 +42,43 @@ OpenType、TrueTypeのフォントのパーサをTypeScriptを使用してNode.j
 	- https://learn.microsoft.com/ja-jp/typography/opentype/spec/glyphformatcomparison
 - OpenType フォント・フォーマット
 	- https://azelpg.gitlab.io/azsky2/note/prog/opentype/index.html
+
+# MSの仕様に存在し未実装のタグ
+
+- avar
+- BASE
+	- バグフィックス中
+- CBDT
+- CBLC
+- CFF
+- CFF2
+- COLR
+- CPAL
+- cvar
+- cvt
+- EBDT
+- EBLC
+- EBSC
+- fpgm
+- fvar
+- gasp
+- GDEF
+- glyf
+- gvar
+- hdmx
+- HVAR
+- JSTF
+- kern
+- loca
+- LTSH
+- MATH
+- MERG
+- meta
+- MVAR
+- PCLT
+- prep
+- sbix
+- STAT
+- SVG
+- VDMX
+- VVAR

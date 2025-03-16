@@ -42,7 +42,7 @@ export const tableParsers: { [tag: string]: TableParser } = {
 	'VORG': parseVorgTable,
 	'GPOS': parseGposTable,
 	'GSUB': parseGsubTable,
-	'BASE': parseBaseTable,
+	//TODO 'BASE': parseBaseTable,
 	// 他のテーブルのパーサーをここに追加
 };
 

@@ -50,7 +50,7 @@ export function parseExtensionPositioningSubtable(
 
 		return {
 			type: GposLookupType.EXTENSION_POSITIONING,
-			posFormat,
+			posFormat: 1 as const, // Literal type '1'に合わせるための const アサーション
 			extensionLookupType,
 			extensionOffset,
 			extensionSubtable

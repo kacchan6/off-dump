@@ -139,7 +139,7 @@ function parseChainContextualPositioningFormat1(
 
 	return {
 		type: GposLookupType.CHAINED_CONTEXTUAL_POSITIONING,
-		posFormat,
+		posFormat: 1 as const, // Use a const assertion to match the literal type '1'
 		coverage,
 		chainPosRuleSetCount,
 		chainPosRuleSetOffsets,
@@ -258,7 +258,7 @@ function parseChainContextualPositioningFormat2(
 
 	return {
 		type: GposLookupType.CHAINED_CONTEXTUAL_POSITIONING,
-		posFormat,
+		posFormat: 2 as const, // Use a const assertion to match the literal type '2'
 		coverage,
 		backtrackClassDef,
 		inputClassDef,
@@ -328,7 +328,7 @@ function parseChainContextualPositioningFormat3(
 
 	return {
 		type: GposLookupType.CHAINED_CONTEXTUAL_POSITIONING,
-		posFormat,
+		posFormat: 3 as const, // Use a const assertion to match the literal type '3'
 		backtrackGlyphCount,
 		backtrackCoverages,
 		inputGlyphCount,

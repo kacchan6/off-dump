@@ -10,6 +10,17 @@ import {
 	AnchorPoint
 } from '../../types/tables/GPOS';
 
+// 必要なパーサーをインポート
+import { parseSingleAdjustmentSubtable } from './gpos-lookup1';
+import { parsePairAdjustmentSubtable } from './gpos-lookup2';
+import { parseCursiveAttachmentSubtable } from './gpos-lookup3';
+import { parseMarkToBaseAttachmentSubtable } from './gpos-lookup4';
+import { parseMarkToLigatureAttachmentSubtable } from './gpos-lookup5';
+import { parseMarkToMarkAttachmentSubtable } from './gpos-lookup6';
+import { parseContextualPositioningSubtable } from './gpos-lookup7';
+import { parseChainedContextualPositioningSubtable } from './gpos-lookup8';
+import { parseExtensionPositioningSubtable } from './gpos-lookup9';
+
 /**
  * 値レコードを解析する
  * 
@@ -76,7 +87,7 @@ export function getValueRecordSize(valueFormat: number): number {
  * 
  * @param reader データリーダー
  * @param offset アンカーテーブルへのオフセット（0の場合はundefinedを返す）
- * @returns アンカーポイント
+ * @returns アンカーポイントまたはundefined
  */
 export function parseAnchorTable(reader: DataReader, offset: number): AnchorPoint | undefined {
 	if (offset === 0) {
@@ -96,7 +107,7 @@ export function parseAnchorTable(reader: DataReader, offset: number): AnchorPoin
 		const yCoordinate = reader.readInt16();
 
 		// 基本的なアンカー情報
-		const anchor = {
+		const anchor: AnchorPoint = {
 			anchorFormat,
 			xCoordinate,
 			yCoordinate
@@ -115,16 +126,17 @@ export function parseAnchorTable(reader: DataReader, offset: number): AnchorPoin
 			const xDeviceTableOffset = reader.readUInt16();
 			const yDeviceTableOffset = reader.readUInt16();
 
-			const result = {
+			return {
 				...anchor,
 				xDeviceTableOffset,
 				yDeviceTableOffset
 			};
-
-			return result;
 		}
 
 		return anchor;
+	} catch (error) {
+		console.warn(`Error parsing anchor table at offset ${offset}: ${error}`);
+		return undefined;
 	} finally {
 		// 位置を復元
 		reader.restore();
@@ -144,26 +156,26 @@ export function parseGposSubtable(
 	offset: number,
 	lookupType: GposLookupType
 ): GposSubTable {
-	// 各ルックアップタイプに対応するパーサー関数をインポート
+	// 各ルックアップタイプに対応するパーサー関数を呼び出す
 	switch (lookupType) {
 		case GposLookupType.SINGLE_ADJUSTMENT:
-			return require('./gpos-lookup1').parseSingleAdjustmentSubtable(reader, offset);
+			return parseSingleAdjustmentSubtable(reader, offset);
 		case GposLookupType.PAIR_ADJUSTMENT:
-			return require('./gpos-lookup2').parsePairAdjustmentSubtable(reader, offset);
+			return parsePairAdjustmentSubtable(reader, offset);
 		case GposLookupType.CURSIVE_ATTACHMENT:
-			return require('./gpos-lookup3').parseCursiveAttachmentSubtable(reader, offset);
+			return parseCursiveAttachmentSubtable(reader, offset);
 		case GposLookupType.MARK_TO_BASE_ATTACHMENT:
-			return require('./gpos-lookup4').parseMarkToBaseAttachmentSubtable(reader, offset);
+			return parseMarkToBaseAttachmentSubtable(reader, offset);
 		case GposLookupType.MARK_TO_LIGATURE_ATTACHMENT:
-			return require('./gpos-lookup5').parseMarkToLigatureAttachmentSubtable(reader, offset);
+			return parseMarkToLigatureAttachmentSubtable(reader, offset);
 		case GposLookupType.MARK_TO_MARK_ATTACHMENT:
-			return require('./gpos-lookup6').parseMarkToMarkAttachmentSubtable(reader, offset);
+			return parseMarkToMarkAttachmentSubtable(reader, offset);
 		case GposLookupType.CONTEXTUAL_POSITIONING:
-			return require('./gpos-lookup7').parseContextualPositioningSubtable(reader, offset);
+			return parseContextualPositioningSubtable(reader, offset);
 		case GposLookupType.CHAINED_CONTEXTUAL_POSITIONING:
-			return require('./gpos-lookup8').parseChainedContextualPositioningSubtable(reader, offset);
+			return parseChainedContextualPositioningSubtable(reader, offset);
 		case GposLookupType.EXTENSION_POSITIONING:
-			return require('./gpos-lookup9').parseExtensionPositioningSubtable(reader, offset);
+			return parseExtensionPositioningSubtable(reader, offset);
 		default:
 			throw new Error(`対応していないGPOSルックアップタイプ: ${lookupType}`);
 	}

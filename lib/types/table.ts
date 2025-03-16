@@ -3,6 +3,8 @@ import { DataReader } from "../utils/data-reader";
 import { Font, TableDirectoryEntry } from "./font";
 import { CmapTable } from "./tables/cmap";
 import { DsigTable } from "./tables/DSIG";
+import { GposTable } from "./tables/GPOS";
+import { GsubTable } from "./tables/GSUB";
 import { HeadTable } from "./tables/head";
 import { HheaTable } from "./tables/hhea";
 import { HmtxTable } from "./tables/hmtx";
@@ -39,6 +41,8 @@ export interface KnownTableTypeMap {
 	'vmtx': VmtxTable;
 	'DSIG': DsigTable;
 	'VORG': VorgTable;
+	'GPOS': GposTable;
+	'GSUB': GsubTable;
 	// 他のテーブルの型をここに追加
 }
 

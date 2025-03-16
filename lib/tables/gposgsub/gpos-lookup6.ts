@@ -11,7 +11,8 @@ import {
 	MarkToMarkAttachmentSubtable,
 	MarkArrayTable,
 	Mark2ArrayTable,
-	Mark2Record
+	Mark2Record,
+	AnchorPoint
 } from '../../types/tables/GPOS';
 import { parseCoverageTable } from './common';
 import { parseAnchorTable } from './gpos-common';
@@ -39,10 +40,26 @@ function parseMarkArray(reader: DataReader, offset: number, baseOffset: number):
 			const markClass = reader.readUInt16();
 			const markAnchorOffset = reader.readUInt16();
 
-			markRecords.push({
-				markClass,
-				markAnchor: parseAnchorTable(reader, baseOffset + markAnchorOffset)!
-			});
+			// アンカーテーブルを解析
+			const markAnchor = parseAnchorTable(reader, baseOffset + markAnchorOffset);
+
+			// アンカーが見つかった場合は使用し、見つからない場合はデフォルトのアンカーを作成
+			if (markAnchor) {
+				markRecords.push({
+					markClass,
+					markAnchor
+				});
+			} else {
+				// デフォルトのアンカーを作成
+				markRecords.push({
+					markClass,
+					markAnchor: {
+						anchorFormat: 1,
+						xCoordinate: 0,
+						yCoordinate: 0
+					}
+				});
+			}
 		}
 
 		return {
@@ -81,16 +98,18 @@ function parseMark2Array(
 		const mark2Records: Mark2Record[] = [];
 
 		for (let i = 0; i < mark2Count; i++) {
-			const mark2Anchors: (ReturnType<typeof parseAnchorTable>)[] = [];
+			const mark2Anchors: (AnchorPoint | null)[] = [];
 
 			// 各マーククラスに対するアンカーポイントを読み取る
 			for (let j = 0; j < markClassCount; j++) {
 				const mark2AnchorOffset = reader.readUInt16();
-				mark2Anchors.push(
-					mark2AnchorOffset !== 0
-						? parseAnchorTable(reader, baseOffset + mark2AnchorOffset)
-						: null
-				);
+
+				if (mark2AnchorOffset !== 0) {
+					const anchor = parseAnchorTable(reader, baseOffset + mark2AnchorOffset);
+					mark2Anchors.push(anchor || null);
+				} else {
+					mark2Anchors.push(null);
+				}
 			}
 
 			mark2Records.push({

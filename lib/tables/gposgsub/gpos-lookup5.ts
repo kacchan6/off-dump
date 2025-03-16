@@ -12,7 +12,8 @@ import {
 	MarkArrayTable,
 	LigatureArrayTable,
 	LigatureAttachTable,
-	ComponentRecord
+	ComponentRecord,
+	AnchorPoint
 } from '../../types/tables/GPOS';
 import { parseCoverageTable } from './common';
 import { parseAnchorTable } from './gpos-common';
@@ -40,10 +41,26 @@ function parseMarkArray(reader: DataReader, offset: number, baseOffset: number):
 			const markClass = reader.readUInt16();
 			const markAnchorOffset = reader.readUInt16();
 
-			markRecords.push({
-				markClass,
-				markAnchor: parseAnchorTable(reader, baseOffset + markAnchorOffset)!
-			});
+			// アンカーテーブルを解析
+			const markAnchor = parseAnchorTable(reader, baseOffset + markAnchorOffset);
+
+			// アンカーが見つかった場合は使用し、見つからない場合はデフォルトのアンカーを作成
+			if (markAnchor) {
+				markRecords.push({
+					markClass,
+					markAnchor
+				});
+			} else {
+				// デフォルトのアンカーを作成
+				markRecords.push({
+					markClass,
+					markAnchor: {
+						anchorFormat: 1,
+						xCoordinate: 0,
+						yCoordinate: 0
+					}
+				});
+			}
 		}
 
 		return {
@@ -98,16 +115,18 @@ function parseLigatureArray(
 
 			// 各コンポーネントレコードを解析
 			for (let i = 0; i < componentCount; i++) {
-				const ligatureAnchors: (ReturnType<typeof parseAnchorTable>)[] = [];
+				const ligatureAnchors: (AnchorPoint | null)[] = [];
 
 				// 各マーククラスに対するアンカーポイントを読み取る
 				for (let j = 0; j < markClassCount; j++) {
 					const ligatureAnchorOffset = reader.readUInt16();
-					ligatureAnchors.push(
-						ligatureAnchorOffset !== 0
-							? parseAnchorTable(reader, baseOffset + ligatureAnchorOffset)
-							: null
-					);
+
+					if (ligatureAnchorOffset !== 0) {
+						const anchor = parseAnchorTable(reader, baseOffset + ligatureAnchorOffset);
+						ligatureAnchors.push(anchor || null);
+					} else {
+						ligatureAnchors.push(null);
+					}
 				}
 
 				componentRecords.push({

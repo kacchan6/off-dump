@@ -122,7 +122,7 @@ function parseContextualPositioningFormat1(
 
 	return {
 		type: GposLookupType.CONTEXTUAL_POSITIONING,
-		posFormat,
+		posFormat: 1 as const, // Use a const assertion to match the literal type '1'
 		coverage,
 		posRuleSetCount,
 		posRuleSetOffsets,
@@ -220,7 +220,7 @@ function parseContextualPositioningFormat2(
 
 	return {
 		type: GposLookupType.CONTEXTUAL_POSITIONING,
-		posFormat,
+		posFormat: 2 as const, // Use a const assertion to match the literal type '2'
 		coverage,
 		classDef,
 		classSetCount,
@@ -263,7 +263,7 @@ function parseContextualPositioningFormat3(
 
 	return {
 		type: GposLookupType.CONTEXTUAL_POSITIONING,
-		posFormat,
+		posFormat: 3 as const, // Use a const assertion to match the literal type '3'
 		glyphCount,
 		coverages,
 		posCount,

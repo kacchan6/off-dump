@@ -1,6 +1,7 @@
 import { ArrayBufferRef } from "../utils/array-buffer-ref";
 import { DataReader } from "../utils/data-reader";
 import { Font, TableDirectoryEntry } from "./font";
+import { BaseTable } from "./tables/BASE";
 import { CmapTable } from "./tables/cmap";
 import { DsigTable } from "./tables/DSIG";
 import { GposTable } from "./tables/GPOS";
@@ -43,6 +44,7 @@ export interface KnownTableTypeMap {
 	'VORG': VorgTable;
 	'GPOS': GposTable;
 	'GSUB': GsubTable;
+	'BASE': BaseTable;
 	// 他のテーブルの型をここに追加
 }
 

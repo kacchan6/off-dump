@@ -22,6 +22,7 @@ import { parseDsigTable } from './DSIG';
 import { parseVorgTable } from './VORG';
 import { parseGposTable } from './GPOS';
 import { parseGsubTable } from './GSUB';
+import { parseBaseTable } from './BASE';
 
 /**
  * テーブル名とパーサー関数のマッピング
@@ -41,6 +42,7 @@ export const tableParsers: { [tag: string]: TableParser } = {
 	'VORG': parseVorgTable,
 	'GPOS': parseGposTable,
 	'GSUB': parseGsubTable,
+	'BASE': parseBaseTable,
 	// 他のテーブルのパーサーをここに追加
 };
 

@@ -5,7 +5,7 @@
  * 参照: https://learn.microsoft.com/ja-jp/typography/opentype/spec/gpos
  */
 
-import { ScriptTable, FeatureTable, LookupTable } from '../common';
+import { ClassDefTable, FeatureTable, LookupTable, ScriptTable } from '../common';
 
 /**
  * GPOS テーブルのバージョン
@@ -648,7 +648,7 @@ export interface Mark2Record {
 }
 
 /**
- * 文脈依存配置サブテーブル (Lookup Type 7)
+ * 文脈依存配置サブテーブル (Lookup Type 7) の基本インターフェース
  */
 export interface ContextualPositioningSubtable {
 	/**
@@ -657,21 +657,221 @@ export interface ContextualPositioningSubtable {
 	type: GposLookupType.CONTEXTUAL_POSITIONING;
 
 	/**
-	 * 位置調整のフォーマット
+	 * 位置調整のフォーマット (1, 2, 3のいずれか)
 	 */
 	posFormat: number;
-
-	/**
-	 * カバレッジテーブル
-	 */
-	coverage: number[];
-
-	// フォーマットに応じたフィールド
-	// TODO: 各フォーマットの詳細実装
 }
 
 /**
- * 連鎖文脈依存配置サブテーブル (Lookup Type 8)
+ * ポジショニングルール (Format 1)
+ * 特定のグリフシーケンスに対するルール
+ */
+export interface PosRule {
+	/**
+	 * 入力グリフの数（最初のグリフを除く）
+	 */
+	glyphCount: number;
+
+	/**
+	 * 入力グリフIDの配列（最初のグリフを除く）
+	 */
+	inputSequence: number[];
+
+	/**
+	 * 位置調整の数
+	 */
+	posCount: number;
+
+	/**
+	 * 位置調整ルックアップレコード配列
+	 */
+	posLookupRecords: PosLookupRecord[];
+}
+
+/**
+ * ポジショニングルールセット
+ * 特定の最初のグリフに対する全てのルールの集合
+ */
+export interface PosRuleSet {
+	/**
+	 * ルールの数
+	 */
+	posRuleCount: number;
+
+	/**
+	 * ルールへのオフセット配列
+	 */
+	posRuleOffsets: number[];
+
+	/**
+	 * ルールの配列
+	 */
+	posRules: PosRule[];
+}
+
+/**
+ * フォーマット1の文脈依存配置サブテーブル (グリフベース)
+ */
+export interface ContextualPositioningFormat1Subtable extends ContextualPositioningSubtable {
+	/**
+	 * 位置調整のフォーマット（常に1）
+	 */
+	posFormat: 1;
+
+	/**
+	 * カバレッジテーブル（このサブテーブルが適用される最初のグリフを定義）
+	 */
+	coverage: number[];
+
+	/**
+	 * ポジショニングルールセットの数
+	 */
+	posRuleSetCount: number;
+
+	/**
+	 * ポジショニングルールセットへのオフセット配列
+	 */
+	posRuleSetOffsets: number[];
+
+	/**
+	 * ポジショニングルールセットの配列
+	 */
+	posRuleSets: PosRuleSet[];
+}
+
+/**
+ * クラスルール
+ * 特定のクラスシーケンスに対するルール
+ */
+export interface PosClassRule {
+	/**
+	 * 入力クラスの数（最初のクラスを除く）
+	 */
+	glyphCount: number;
+
+	/**
+	 * 入力クラス配列（最初のクラスを除く）
+	 */
+	classSequence: number[];
+
+	/**
+	 * 位置調整の数
+	 */
+	posCount: number;
+
+	/**
+	 * 位置調整ルックアップレコード配列
+	 */
+	posLookupRecords: PosLookupRecord[];
+}
+
+/**
+ * クラスセット
+ * 特定のクラスに対する全てのルールの集合
+ */
+export interface PosClassSet {
+	/**
+	 * クラスルールの数
+	 */
+	posClassRuleCount: number;
+
+	/**
+	 * クラスルールへのオフセット配列
+	 */
+	posClassRuleOffsets: number[];
+
+	/**
+	 * クラスルールの配列
+	 */
+	posClassRules: PosClassRule[];
+}
+
+/**
+ * フォーマット2の文脈依存配置サブテーブル (クラスベース)
+ */
+export interface ContextualPositioningFormat2Subtable extends ContextualPositioningSubtable {
+	/**
+	 * 位置調整のフォーマット（常に2）
+	 */
+	posFormat: 2;
+
+	/**
+	 * カバレッジテーブル（このサブテーブルが適用される最初のグリフを定義）
+	 */
+	coverage: number[];
+
+	/**
+	 * クラス定義テーブル
+	 */
+	classDef: ClassDefTable;
+
+	/**
+	 * クラスセットの数
+	 */
+	classSetCount: number;
+
+	/**
+	 * クラスセットへのオフセット配列
+	 * nullの場合、そのクラスにはルールがない
+	 */
+	classSetOffsets: (number | null)[];
+
+	/**
+	 * クラスセットの配列
+	 */
+	classSets: (PosClassSet | null)[];
+}
+
+/**
+ * フォーマット3の文脈依存配置サブテーブル (カバレッジベース)
+ */
+export interface ContextualPositioningFormat3Subtable extends ContextualPositioningSubtable {
+	/**
+	 * 位置調整のフォーマット（常に3）
+	 */
+	posFormat: 3;
+
+	/**
+	 * グリフの数
+	 */
+	glyphCount: number;
+
+	/**
+	 * カバレッジテーブルの配列
+	 * 一連のカバレッジテーブルは入力シーケンスを定義する
+	 */
+	coverages: number[][];
+
+	/**
+	 * 位置調整レコードの数
+	 */
+	posCount: number;
+
+	/**
+	 * 位置調整ルックアップレコード配列
+	 */
+	posLookupRecords: PosLookupRecord[];
+}
+
+/**
+ * 位置調整ルックアップレコード
+ * 連鎖内の特定位置のグリフに適用される位置調整ルックアップを指定
+ */
+export interface PosLookupRecord {
+	/**
+	 * 入力シーケンス内で位置調整が適用されるグリフの位置
+	 * （0が最初の入力グリフ）
+	 */
+	sequenceIndex: number;
+
+	/**
+	 * 位置調整ルックアップテーブルのインデックス
+	 */
+	lookupListIndex: number;
+}
+
+/**
+ * 連鎖文脈依存配置サブテーブル (Lookup Type 8) の基本インターフェース
  */
 export interface ChainedContextualPositioningSubtable {
 	/**
@@ -680,17 +880,269 @@ export interface ChainedContextualPositioningSubtable {
 	type: GposLookupType.CHAINED_CONTEXTUAL_POSITIONING;
 
 	/**
-	 * 位置調整のフォーマット
+	 * 位置調整のフォーマット (1, 2, 3のいずれか)
 	 */
 	posFormat: number;
+}
+
+/**
+ * チェーンポジショニングルール (Format 1)
+ * 特定のグリフシーケンスに対するルール
+ */
+export interface ChainPosRule {
+	/**
+	 * バックトラックグリフの数
+	 */
+	backtrackGlyphCount: number;
 
 	/**
-	 * カバレッジテーブル
+	 * バックトラックグリフIDの配列（後ろから前に向かって）
+	 */
+	backtrackSequence: number[];
+
+	/**
+	 * 入力グリフの数（最初のグリフを除く）
+	 */
+	inputGlyphCount: number;
+
+	/**
+	 * 入力グリフIDの配列（最初のグリフを除く）
+	 */
+	inputSequence: number[];
+
+	/**
+	 * 先読みグリフの数
+	 */
+	lookAheadGlyphCount: number;
+
+	/**
+	 * 先読みグリフIDの配列
+	 */
+	lookAheadSequence: number[];
+
+	/**
+	 * 位置調整の数
+	 */
+	posCount: number;
+
+	/**
+	 * 位置調整ルックアップレコード配列
+	 */
+	posLookupRecords: PosLookupRecord[];
+}
+
+/**
+ * チェーンポジショニングルールセット
+ * 特定の最初のグリフに対する全てのチェーンポジショニングルールの集合
+ */
+export interface ChainPosRuleSet {
+	/**
+	 * チェーンルールの数
+	 */
+	chainPosRuleCount: number;
+
+	/**
+	 * チェーンルールへのオフセット配列
+	 */
+	chainPosRuleOffsets: number[];
+
+	/**
+	 * チェーンルールの配列
+	 */
+	chainPosRules: ChainPosRule[];
+}
+
+/**
+ * フォーマット1の連鎖文脈依存配置サブテーブル (グリフベース)
+ */
+export interface ChainContextualPositioningFormat1Subtable extends ChainedContextualPositioningSubtable {
+	/**
+	 * 位置調整のフォーマット（常に1）
+	 */
+	posFormat: 1;
+
+	/**
+	 * カバレッジテーブル（このサブテーブルが適用される最初のグリフを定義）
 	 */
 	coverage: number[];
 
-	// フォーマットに応じたフィールド
-	// TODO: 各フォーマットの詳細実装
+	/**
+	 * チェーンポジショニングルールセットの数
+	 */
+	chainPosRuleSetCount: number;
+
+	/**
+	 * チェーンポジショニングルールセットへのオフセット配列
+	 */
+	chainPosRuleSetOffsets: number[];
+
+	/**
+	 * チェーンポジショニングルールセットの配列
+	 */
+	chainPosRuleSets: ChainPosRuleSet[];
+}
+
+/**
+ * チェーンクラスルール (Format 2)
+ * 特定の入力クラスシーケンスに対するルール
+ */
+export interface ChainClassRule {
+	/**
+	 * バックトラッククラスの数
+	 */
+	backtrackGlyphCount: number;
+
+	/**
+	 * バックトラッククラス配列（後ろから前に向かって）
+	 */
+	backtrackSequence: number[];
+
+	/**
+	 * 入力クラスの数（最初のクラスを除く）
+	 */
+	inputGlyphCount: number;
+
+	/**
+	 * 入力クラス配列（最初のクラスを除く）
+	 */
+	inputSequence: number[];
+
+	/**
+	 * 先読みクラスの数
+	 */
+	lookAheadGlyphCount: number;
+
+	/**
+	 * 先読みクラス配列
+	 */
+	lookAheadSequence: number[];
+
+	/**
+	 * 位置調整の数
+	 */
+	posCount: number;
+
+	/**
+	 * 位置調整ルックアップレコード配列
+	 */
+	posLookupRecords: PosLookupRecord[];
+}
+
+/**
+ * チェーンクラスセット
+ * 特定の入力クラスに対する全てのチェーンクラスルールの集合
+ */
+export interface ChainClassSet {
+	/**
+	 * チェーンクラスルールの数
+	 */
+	chainClassRuleCount: number;
+
+	/**
+	 * チェーンクラスルールへのオフセット配列
+	 */
+	chainClassRuleOffsets: number[];
+
+	/**
+	 * チェーンクラスルールの配列
+	 */
+	chainClassRules: ChainClassRule[];
+}
+
+/**
+ * フォーマット2の連鎖文脈依存配置サブテーブル (クラスベース)
+ */
+export interface ChainContextualPositioningFormat2Subtable extends ChainedContextualPositioningSubtable {
+	/**
+	 * 位置調整のフォーマット（常に2）
+	 */
+	posFormat: 2;
+
+	/**
+	 * カバレッジテーブル（このサブテーブルが適用される最初のグリフを定義）
+	 */
+	coverage: number[];
+
+	/**
+	 * バックトラッククラス定義テーブル
+	 */
+	backtrackClassDef: ClassDefTable;
+
+	/**
+	 * 入力クラス定義テーブル
+	 */
+	inputClassDef: ClassDefTable;
+
+	/**
+	 * 先読みクラス定義テーブル
+	 */
+	lookAheadClassDef: ClassDefTable;
+
+	/**
+	 * チェーンクラスセットの数（入力クラスの数）
+	 */
+	chainClassSetCount: number;
+
+	/**
+	 * チェーンクラスセットへのオフセット配列
+	 * nullの場合、そのクラスには連鎖ルールがない
+	 */
+	chainClassSetOffsets: (number | null)[];
+
+	/**
+	 * チェーンクラスセットの配列
+	 */
+	chainClassSets: (ChainClassSet | null)[];
+}
+
+/**
+ * フォーマット3の連鎖文脈依存配置サブテーブル (カバレッジベース)
+ */
+export interface ChainContextualPositioningFormat3Subtable extends ChainedContextualPositioningSubtable {
+	/**
+	 * 位置調整のフォーマット（常に3）
+	 */
+	posFormat: 3;
+
+	/**
+	 * バックトラックカバレッジの数
+	 */
+	backtrackGlyphCount: number;
+
+	/**
+	 * バックトラックカバレッジテーブルの配列（後ろから前に向かって）
+	 */
+	backtrackCoverages: number[][];
+
+	/**
+	 * 入力カバレッジの数
+	 */
+	inputGlyphCount: number;
+
+	/**
+	 * 入力カバレッジテーブルの配列
+	 */
+	inputCoverages: number[][];
+
+	/**
+	 * 先読みカバレッジの数
+	 */
+	lookAheadGlyphCount: number;
+
+	/**
+	 * 先読みカバレッジテーブルの配列
+	 */
+	lookAheadCoverages: number[][];
+
+	/**
+	 * 位置調整レコードの数
+	 */
+	posCount: number;
+
+	/**
+	 * 位置調整ルックアップレコードの配列
+	 */
+	posLookupRecords: PosLookupRecord[];
 }
 
 /**

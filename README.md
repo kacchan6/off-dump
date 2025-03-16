@@ -7,6 +7,13 @@ OpenType、TrueTypeのフォントのパーサをTypeScriptを使用してNode.j
 組版機能は持たず、フォントの形式をotfccのようにJSONで使いやすい形で出力するのが目的です。
 フォントの再ビルドは行わず出力のみを行います。 コメント類は全て日本語です
 
+戻り値の型は全て自明であれば省略、クラスのpublic宣言も不要です。
+
+各種テーブルについては
+- lib/tables/以下がパーザ
+- lib/types/tables/以下が型定義
+- lib/utils/tables/以下が型に対応したユーティリティ
+
 # 参考資料
 
 - OpenTypeフォント仕様書

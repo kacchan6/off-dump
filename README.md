@@ -38,3 +38,5 @@ OpenType、TrueTypeのフォントのパーサをTypeScriptを使用してNode.j
 	- https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf
 	- https://adobe-type-tools.github.io/font-tech-notes/pdfs/5177.Type2.pdf
 	- https://learn.microsoft.com/ja-jp/typography/opentype/spec/glyphformatcomparison
+- OpenType フォント・フォーマット
+	- https://azelpg.gitlab.io/azsky2/note/prog/opentype/index.html

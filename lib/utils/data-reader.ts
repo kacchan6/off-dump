@@ -190,6 +190,8 @@ export class DataReader {
 		return this.createSubReader(this.getRemainingBytes());
 	}
 
+	// === 基本データ型 ===
+
 	/**
 	 * 8ビット符号付き整数を読み込む
 	 * 
@@ -319,10 +321,67 @@ export class DataReader {
 		return value;
 	}
 
+	// === OpenType ドメイン型 ===
+
 	/**
-	 * Fixed形式（16.16）の32ビット浮動小数点数を読み込む
-	 * 
-	 * @throws EOFに達した場合にエラー
+	 * BYTE: 8ビット符号なし整数
+	 * @opentype BYTE = uint8
+	 */
+	readBYTE(): number {
+		return this.readUInt8();
+	}
+
+	/**
+	 * CHAR: 8ビット符号付き整数
+	 * @opentype CHAR = int8
+	 */
+	readCHAR(): number {
+		return this.readInt8();
+	}
+
+	/**
+	 * USHORT: 16ビット符号なし整数
+	 * @opentype USHORT = uint16
+	 */
+	readUSHORT(): number {
+		return this.readUInt16();
+	}
+
+	/**
+	 * SHORT: 16ビット符号付き整数
+	 * @opentype SHORT = int16
+	 */
+	readSHORT(): number {
+		return this.readInt16();
+	}
+
+	/**
+	 * UINT24: 24ビット符号なし整数
+	 * @opentype UINT24 = uint24
+	 */
+	readUINT24(): number {
+		return this.readUInt24();
+	}
+
+	/**
+	 * ULONG: 32ビット符号なし整数
+	 * @opentype ULONG = uint32
+	 */
+	readULONG(): number {
+		return this.readUInt32();
+	}
+
+	/**
+	 * LONG: 32ビット符号付き整数
+	 * @opentype LONG = int32
+	 */
+	readLONG(): number {
+		return this.readInt32();
+	}
+
+	/**
+	 * Fixed: 16.16固定小数点数
+	 * @opentype Fixed = 32ビット符号付き固定小数点数
 	 */
 	readFixed() {
 		const value = this.readInt32();
@@ -330,9 +389,32 @@ export class DataReader {
 	}
 
 	/**
-	 * F2DOT14形式の16ビット浮動小数点数を読み込む
+	 * Version16Dot16: メジャー.マイナーバージョン表記（0xMMMMmmmm形式）
 	 * 
-	 * @throws EOFに達した場合にエラー
+	 * 0x00010000 = 1.0
+	 * 0x00005000 = 0.5
+	 * 
+	 * @opentype Version16Dot16 = 32ビットバージョン番号
+	 */
+	readVersion16Dot16(): number {
+		const rawValue = this.readUInt32();
+
+		// 標準バージョン値の場合は定数を返す
+		if (rawValue === 0x00010000) return 1.0;
+		if (rawValue === 0x00005000) return 0.5;
+
+		// その他の場合は、メジャー部分とマイナー部分を抽出して変換
+		const major = rawValue >> 16;
+		const minor = (rawValue & 0xFFFF) / 65536.0;
+
+		return major + minor;
+	}
+
+	/**
+	 * F2DOT14形式の16ビット浮動小数点数を読み込む
+	 * 2ビットの整数部と14ビットの小数部を持つ
+	 * 
+	 * @opentype F2DOT14 = 2.14固定小数点数
 	 */
 	readF2DOT14() {
 		const value = this.readInt16();
@@ -343,7 +425,7 @@ export class DataReader {
 	 * FWORD形式の16ビット符号付き整数を読み込む
 	 * (表のy座標などのフォント座標値)
 	 * 
-	 * @throws EOFに達した場合にエラー
+	 * @opentype FWORD = int16（フォント単位で測定される値）
 	 */
 	readFWORD() {
 		return this.readInt16();
@@ -353,134 +435,94 @@ export class DataReader {
 	 * UFWORD形式の16ビット符号なし整数を読み込む
 	 * (表のx座標などのフォント座標値)
 	 * 
-	 * @throws EOFに達した場合にエラー
+	 * @opentype UFWORD = uint16（フォント単位で測定される値）
 	 */
 	readUFWORD() {
 		return this.readUInt16();
 	}
 
 	/**
-	 * OFFSET形式の16ビット符号なし整数を読み込む
-	 * (16ビットオフセット値)
-	 * 
-	 * @throws EOFに達した場合にエラー
+	 * 16ビットオフセット値
+	 * @opentype Offset16 = uint16
 	 */
-	readOFFSET16() {
+	readOffset16() {
 		return this.readUInt16();
 	}
 
 	/**
-	 * OFFSET形式の24ビット符号なし整数を読み込む
-	 * (24ビットオフセット値)
-	 * 
-	 * @throws EOFに達した場合にエラー
+	 * 24ビットオフセット値
+	 * @opentype Offset24 = uint24
 	 */
-	readOFFSET24() {
+	readOffset24() {
 		return this.readUInt24();
 	}
 
 	/**
-	 * OFFSET形式の32ビット符号なし整数を読み込む
-	 * (32ビットオフセット値)
-	 * 
-	 * @throws EOFに達した場合にエラー
+	 * 32ビットオフセット値
+	 * @opentype Offset32 = uint32
 	 */
-	readOFFSET32() {
+	readOffset32() {
 		return this.readUInt32();
 	}
 
 	/**
-	 * CFF Index形式のカウント値を読み込む
+	 * 可変フォント用のDelta形式（複数の小さな調整値の集合）
 	 * 
-	 * @throws EOFに達した場合にエラー
+	 * @opentype Delta = int16配列
 	 */
-	readCFFIndexCount() {
+	readDelta(count: number): number[] {
+		const result: number[] = [];
+		for (let i = 0; i < count; i++) {
+			result.push(this.readInt16());
+		}
+		return result;
+	}
+
+	/**
+	 * 可変フォントバリエーションインデックス
+	 * 
+	 * @opentype VarIndex = uint16（上位4ビットはinner、下位12ビットはouter）
+	 */
+	readVarIndex(): { outer: number, inner: number } {
+		const value = this.readUInt16();
+		return {
+			inner: (value >> 12) & 0xF,  // 上位4ビット
+			outer: value & 0xFFF        // 下位12ビット
+		};
+	}
+
+	/**
+	 * Tag: 4バイトの識別子
+	 * 
+	 * @opentype Tag = 4文字のASCII文字列
+	 */
+	readTag() {
+		this.checkEOF(4);
+
+		const tag = String.fromCharCode(
+			this.view.getUint8(this.offset),
+			this.view.getUint8(this.offset + 1),
+			this.view.getUint8(this.offset + 2),
+			this.view.getUint8(this.offset + 3)
+		);
+
+		this.offset += 4;
+		return tag;
+	}
+
+	/**
+	 * GlyphID: グリフインデックス
+	 * 
+	 * @opentype GlyphID = uint16
+	 */
+	readGlyphID() {
 		return this.readUInt16();
 	}
 
 	/**
-	 * CFF2 Index形式のカウント値を読み込む (32ビット)
+	 * 日付時刻形式（1904年1月1日からの秒数）
 	 * 
-	 * @throws EOFに達した場合にエラー
-	 */
-	readCFF2IndexCount() {
-		return this.readUInt32();
-	}
-
-	/**
-	 * CFF/CFF2のカードを読み込む (可変長整数)
-	 * 
-	 * @throws EOFに達した場合にエラー
-	 */
-	readCard() {
-		// 最初の1バイトを読む
-		const b0 = this.readUInt8();
-
-		// 0-246: 値はバイト自体
-		if (b0 <= 246) {
-			return b0;
-		}
-
-		// 247-250: 値は (b0-247)*256 + 次のバイト + 108
-		if (b0 <= 250) {
-			const b1 = this.readUInt8();
-			return ((b0 - 247) * 256) + b1 + 108;
-		}
-
-		// 251-254: 値は -(b0-251)*256 - 次のバイト - 108
-		if (b0 <= 254) {
-			const b1 = this.readUInt8();
-			return -((b0 - 251) * 256) - b1 - 108;
-		}
-
-		// 255: 32ビット整数が続く
-		return this.readInt32();
-	}
-
-	/**
-	 * CFF2の可変長整数 (blend演算用など)を読み込む
-	 * 
-	 * @throws EOFに達した場合にエラー
-	 */
-	readCFF2VariableInt() {
-		// 最初のバイトで可変長整数の長さを判断
-		const firstByte = this.readUInt8();
-
-		// 32ビット整数の場合
-		if (firstByte === 28) {
-			return this.readInt16();
-		}
-
-		// バイト自体で値を表現
-		if (firstByte >= 32 && firstByte <= 246) {
-			return firstByte - 139;
-		}
-
-		// 2バイト整数の場合
-		if (firstByte >= 247 && firstByte <= 250) {
-			const b1 = this.readUInt8();
-			return ((firstByte - 247) * 256) + b1 + 108;
-		}
-
-		// 2バイト負の整数の場合
-		if (firstByte >= 251 && firstByte <= 254) {
-			const b1 = this.readUInt8();
-			return -((firstByte - 251) * 256) - b1 - 108;
-		}
-
-		// 255の場合は、後続4バイトを使用する32ビット整数
-		if (firstByte === 255) {
-			return this.readInt32();
-		}
-
-		throw new Error(`Invalid CFF2 variable-length integer first byte: ${firstByte}`);
-	}
-
-	/**
-	 * LONGDATETIME形式の64ビットタイムスタンプを読み込む
-	 * （Mac時間から1904年1月1日からの秒数）
-	 * 
-	 * @throws EOFに達した場合にエラー
+	 * @opentype LONGDATETIME = int64（秒数）
 	 */
 	readLongDateTime() {
 		this.checkEOF(8);
@@ -511,23 +553,21 @@ export class DataReader {
 	}
 
 	/**
-	 * 4バイトのタグ（識別子）を読み込む
-	 * 注: タグはエンディアンに影響されない
+	 * CFF Indexカウント値
 	 * 
-	 * @throws EOFに達した場合にエラー
+	 * @opentype CFF Index Format = uint16
 	 */
-	readTag() {
-		this.checkEOF(4);
+	readCFFIndexCount() {
+		return this.readUInt16();
+	}
 
-		const tag = String.fromCharCode(
-			this.view.getUint8(this.offset),
-			this.view.getUint8(this.offset + 1),
-			this.view.getUint8(this.offset + 2),
-			this.view.getUint8(this.offset + 3)
-		);
-
-		this.offset += 4;
-		return tag;
+	/**
+	 * CFF2 Indexカウント値 (32ビット)
+	 * 
+	 * @opentype CFF2 Index Format = uint32
+	 */
+	readCFF2IndexCount() {
+		return this.readUInt32();
 	}
 
 	/**
@@ -605,6 +645,45 @@ export class DataReader {
 		}
 
 		return dict;
+	}
+
+	/**
+	 * CFF2の可変長整数 (blend演算用など)を読み込む
+	 * 
+	 * @throws EOFに達した場合にエラー
+	 */
+	readCFF2VariableInt() {
+		// 最初のバイトで可変長整数の長さを判断
+		const firstByte = this.readUInt8();
+
+		// 32ビット整数の場合
+		if (firstByte === 28) {
+			return this.readInt16();
+		}
+
+		// バイト自体で値を表現
+		if (firstByte >= 32 && firstByte <= 246) {
+			return firstByte - 139;
+		}
+
+		// 2バイト整数の場合
+		if (firstByte >= 247 && firstByte <= 250) {
+			const b1 = this.readUInt8();
+			return ((firstByte - 247) * 256) + b1 + 108;
+		}
+
+		// 2バイト負の整数の場合
+		if (firstByte >= 251 && firstByte <= 254) {
+			const b1 = this.readUInt8();
+			return -((firstByte - 251) * 256) - b1 - 108;
+		}
+
+		// 255の場合は、後続4バイトを使用する32ビット整数
+		if (firstByte === 255) {
+			return this.readInt32();
+		}
+
+		throw new Error(`Invalid CFF2 variable-length integer first byte: ${firstByte}`);
 	}
 
 	/**
@@ -706,30 +785,6 @@ export class DataReader {
 		}
 
 		return coords;
-	}
-
-	/**
-	 * CFF2 CharStringのオペコードを読み込む
-	 * 
-	 * @throws EOFに達した場合にエラー
-	 */
-	readCFF2CharStringOp() {
-		const b0 = this.readUInt8();
-
-		// 1バイトオペコード
-		if (b0 <= 21) {
-			return b0;
-		}
-
-		// 2バイトオペコード
-		if (b0 === 12) {
-			const b1 = this.readUInt8();
-			return (12 << 8) | b1;
-		}
-
-		// オペコードでない場合は1バイト戻す
-		this.skip(-1);
-		return null;
 	}
 
 	/**

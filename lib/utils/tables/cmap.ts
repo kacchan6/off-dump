@@ -3,6 +3,7 @@
  */
 
 import {
+	AnyCmapSubtable,
 	CmapTable, CmapEncodingRecord, CmapFormat,
 	CmapFormat0Subtable, CmapFormat4Subtable, CmapFormat6Subtable,
 	CmapFormat12Subtable, CmapPlatformID, CmapWindowsEncodingID,
@@ -12,6 +13,69 @@ import {
 	CmapFormat8Subtable,
 	CmapFormat2Subtable
 } from '../../types/tables/cmap';
+
+/**
+ * サブテーブルがCmapFormat0Subtable型かどうかを判定する型ガード
+ */
+export function isCmapFormat0(subtable: AnyCmapSubtable): subtable is CmapFormat0Subtable {
+	return subtable.format === CmapFormat.BYTE_ENCODING;
+}
+
+/**
+ * サブテーブルがCmapFormat2Subtable型かどうかを判定する型ガード
+ */
+export function isCmapFormat2(subtable: AnyCmapSubtable): subtable is CmapFormat2Subtable {
+	return subtable.format === CmapFormat.HIGH_BYTE_MAPPING;
+}
+
+/**
+ * サブテーブルがCmapFormat4Subtable型かどうかを判定する型ガード
+ */
+export function isCmapFormat4(subtable: AnyCmapSubtable): subtable is CmapFormat4Subtable {
+	return subtable.format === CmapFormat.SEGMENT_MAPPING;
+}
+
+/**
+ * サブテーブルがCmapFormat6Subtable型かどうかを判定する型ガード
+ */
+export function isCmapFormat6(subtable: AnyCmapSubtable): subtable is CmapFormat6Subtable {
+	return subtable.format === CmapFormat.TRIMMED_TABLE_MAPPING;
+}
+
+/**
+ * サブテーブルがCmapFormat8Subtable型かどうかを判定する型ガード
+ */
+export function isCmapFormat8(subtable: AnyCmapSubtable): subtable is CmapFormat8Subtable {
+	return subtable.format === CmapFormat.MIXED_16_32_BIT_MAPPING;
+}
+
+/**
+ * サブテーブルがCmapFormat10Subtable型かどうかを判定する型ガード
+ */
+export function isCmapFormat10(subtable: AnyCmapSubtable): subtable is CmapFormat10Subtable {
+	return subtable.format === CmapFormat.TRIMMED_ARRAY;
+}
+
+/**
+ * サブテーブルがCmapFormat12Subtable型かどうかを判定する型ガード
+ */
+export function isCmapFormat12(subtable: AnyCmapSubtable): subtable is CmapFormat12Subtable {
+	return subtable.format === CmapFormat.SEGMENTED_COVERAGE;
+}
+
+/**
+ * サブテーブルがCmapFormat13Subtable型かどうかを判定する型ガード
+ */
+export function isCmapFormat13(subtable: AnyCmapSubtable): subtable is CmapFormat13Subtable {
+	return subtable.format === CmapFormat.MANY_TO_ONE_RANGE_MAPPINGS;
+}
+
+/**
+ * サブテーブルがCmapFormat14Subtable型かどうかを判定する型ガード
+ */
+export function isCmapFormat14(subtable: AnyCmapSubtable): subtable is CmapFormat14Subtable {
+	return subtable.format === CmapFormat.UNICODE_VARIATION_SEQUENCES;
+}
 
 /**
  * 指定したプラットフォームIDとエンコーディングIDのエンコーディングレコードを取得
@@ -86,254 +150,239 @@ export function getPreferredUnicodeEncodingRecord(cmap: CmapTable): CmapEncoding
 }
 
 /**
- * フォーマット0のサブテーブルからグリフIDを取得
+ * サブテーブルから文字コードに対応するグリフIDを取得
  * 
- * @param subtable フォーマット0のサブテーブル
- * @param charCode 文字コード (0-255)
+ * @param subtable cmapサブテーブル
+ * @param charCode 文字コード
  */
-function getGlyphIDFromFormat0(subtable: CmapFormat0Subtable, charCode: number): number {
-	if (charCode < 0 || charCode > 255) {
-		return 0; // 範囲外の場合は.notdefを返す
-	}
-	return subtable.glyphIdArray[charCode];
-}
-
-/**
- * フォーマット4のサブテーブルからグリフIDを取得
- * 
- * @param subtable フォーマット4のサブテーブル
- * @param charCode 文字コード (0-65535)
- */
-function getGlyphIDFromFormat4(subtable: CmapFormat4Subtable, charCode: number): number {
-	if (charCode < 0 || charCode > 65535) {
-		return 0; // 範囲外の場合は.notdefを返す
-	}
-
-	// セグメントの数
-	const segCount = subtable.segCountX2 / 2;
-
-	// 二分探索でセグメントを見つける
-	let left = 0;
-	let right = segCount - 1;
-
-	while (left <= right) {
-		const mid = Math.floor((left + right) / 2);
-
-		if (charCode > subtable.endCode[mid]) {
-			left = mid + 1;
-		} else if (charCode < subtable.startCode[mid]) {
-			right = mid - 1;
-		} else {
-			// セグメントが見つかった
-
-			// 最後のセグメントの0xFFFFは特別処理
-			if (subtable.endCode[mid] === 0xFFFF && subtable.startCode[mid] === 0xFFFF) {
-				return 0;
+export function getGlyphIDFromSubtable(subtable: AnyCmapSubtable, charCode: number): number {
+	switch (subtable.format) {
+		case CmapFormat.BYTE_ENCODING:
+			if (isCmapFormat0(subtable)) {
+				if (charCode < 0 || charCode > 255) {
+					return 0; // 範囲外の場合は.notdefを返す
+				}
+				return subtable.glyphIdArray[charCode];
 			}
+			break;
 
-			// 対応するグリフIDを計算
-			if (subtable.idRangeOffset[mid] === 0) {
-				// idDeltaを使用
-				return (subtable.idDelta[mid] + charCode) & 0xFFFF;
-			} else {
-				// idRangeOffsetを使用
-				const offset = (mid - segCount + subtable.idRangeOffset[mid] / 2) +
-					(charCode - subtable.startCode[mid]);
-
-				if (offset >= subtable.glyphIdArray.length) {
-					return 0; // 範囲外
+		case CmapFormat.HIGH_BYTE_MAPPING:
+			if (isCmapFormat2(subtable)) {
+				if (charCode < 0 || charCode > 0xFFFF) {
+					return 0; // 範囲外の場合は.notdefを返す
 				}
 
-				const glyphId = subtable.glyphIdArray[offset];
+				// 高バイトと低バイトに分解
+				const highByte = (charCode >> 8) & 0xFF;
+				const lowByte = charCode & 0xFF;
+
+				// 高バイトに対応するサブヘッダインデックスを取得
+				const subHeaderIndex = subtable.subHeaderKeys[highByte] / 2;
+
+				// サブヘッダが見つからない場合
+				if (subHeaderIndex >= subtable.subHeaders.length) {
+					return 0;
+				}
+
+				const subHeader = subtable.subHeaders[subHeaderIndex];
+
+				// 高バイトがゼロの場合は特別な処理（ASCII領域）
+				if (highByte === 0 && subHeaderIndex === 0) {
+					// ASCII文字はサブヘッダを使わずに直接マップ
+					if (lowByte < subHeader.firstCode || lowByte >= subHeader.firstCode + subHeader.entryCount) {
+						return 0;
+					}
+					return subtable.glyphIdArray[lowByte];
+				}
+
+				// 低バイトが範囲外の場合
+				if (lowByte < subHeader.firstCode || lowByte >= subHeader.firstCode + subHeader.entryCount) {
+					return 0;
+				}
+
+				// 対応するグリフIDを計算
+				const glyphIdIndex = subHeader.glyphIdArrayIndex + (lowByte - subHeader.firstCode);
+
+				if (glyphIdIndex >= subtable.glyphIdArray.length) {
+					return 0;
+				}
+
+				const glyphId = subtable.glyphIdArray[glyphIdIndex];
 
 				if (glyphId === 0) {
 					return 0;
 				}
 
-				return (glyphId + subtable.idDelta[mid]) & 0xFFFF;
+				return (glyphId + subHeader.idDelta) & 0xFFFF;
 			}
-		}
-	}
+			break;
 
-	return 0; // 見つからない場合は.notdefを返す
-}
+		case CmapFormat.SEGMENT_MAPPING:
+			if (isCmapFormat4(subtable)) {
+				if (charCode < 0 || charCode > 65535) {
+					return 0; // 範囲外の場合は.notdefを返す
+				}
 
-/**
- * フォーマット6のサブテーブルからグリフIDを取得
- * 
- * @param subtable フォーマット6のサブテーブル
- * @param charCode 文字コード
- */
-function getGlyphIDFromFormat6(subtable: CmapFormat6Subtable, charCode: number): number {
-	const firstCode = subtable.firstCode;
-	const entryCount = subtable.entryCount;
+				// セグメントの数
+				const segCount = subtable.segCountX2 / 2;
 
-	if (charCode < firstCode || charCode >= firstCode + entryCount) {
-		return 0; // 範囲外の場合は.notdefを返す
-	}
+				// 二分探索でセグメントを見つける
+				let left = 0;
+				let right = segCount - 1;
 
-	return subtable.glyphIdArray[charCode - firstCode];
-}
+				while (left <= right) {
+					const mid = Math.floor((left + right) / 2);
 
-/**
- * フォーマット12のサブテーブルからグリフIDを取得
- * 
- * @param subtable フォーマット12のサブテーブル
- * @param charCode 文字コード
- */
-function getGlyphIDFromFormat12(subtable: CmapFormat12Subtable, charCode: number): number {
-	// 二分探索でグループを見つける
-	let left = 0;
-	let right = subtable.numGroups - 1;
+					if (charCode > subtable.endCode[mid]) {
+						left = mid + 1;
+					} else if (charCode < subtable.startCode[mid]) {
+						right = mid - 1;
+					} else {
+						// セグメントが見つかった
 
-	while (left <= right) {
-		const mid = Math.floor((left + right) / 2);
-		const group = subtable.groups[mid];
+						// 最後のセグメントの0xFFFFは特別処理
+						if (subtable.endCode[mid] === 0xFFFF && subtable.startCode[mid] === 0xFFFF) {
+							return 0;
+						}
 
-		if (charCode < group.startCharCode) {
-			right = mid - 1;
-		} else if (charCode > group.endCharCode) {
-			left = mid + 1;
-		} else {
-			// グループが見つかった
-			const offset = charCode - group.startCharCode;
-			return group.startGlyphID + offset;
-		}
-	}
+						// 対応するグリフIDを計算
+						if (subtable.idRangeOffset[mid] === 0) {
+							// idDeltaを使用
+							return (subtable.idDelta[mid] + charCode) & 0xFFFF;
+						} else {
+							// idRangeOffsetを使用
+							const offset = (mid - segCount + subtable.idRangeOffset[mid] / 2) +
+								(charCode - subtable.startCode[mid]);
 
-	return 0; // 見つからない場合は.notdefを返す
-}
+							if (offset >= subtable.glyphIdArray.length) {
+								return 0; // 範囲外
+							}
 
-/**
- * フォーマット2のサブテーブルからグリフIDを取得
- * 
- * @param subtable フォーマット2のサブテーブル
- * @param charCode 文字コード
- */
-function getGlyphIDFromFormat2(subtable: CmapFormat2Subtable, charCode: number): number {
-	if (charCode < 0 || charCode > 0xFFFF) {
-		return 0; // 範囲外の場合は.notdefを返す
-	}
+							const glyphId = subtable.glyphIdArray[offset];
 
-	// 高バイトと低バイトに分解
-	const highByte = (charCode >> 8) & 0xFF;
-	const lowByte = charCode & 0xFF;
+							if (glyphId === 0) {
+								return 0;
+							}
 
-	// 高バイトに対応するサブヘッダインデックスを取得
-	const subHeaderIndex = subtable.subHeaderKeys[highByte] / 2;
+							return (glyphId + subtable.idDelta[mid]) & 0xFFFF;
+						}
+					}
+				}
 
-	// サブヘッダが見つからない場合
-	if (subHeaderIndex >= subtable.subHeaders.length) {
-		return 0;
-	}
+				return 0; // 見つからない場合は.notdefを返す
+			}
+			break;
 
-	const subHeader = subtable.subHeaders[subHeaderIndex];
+		case CmapFormat.TRIMMED_TABLE_MAPPING:
+			if (isCmapFormat6(subtable)) {
+				const firstCode = subtable.firstCode;
+				const entryCount = subtable.entryCount;
 
-	// 高バイトがゼロの場合は特別な処理（ASCII領域）
-	if (highByte === 0 && subHeaderIndex === 0) {
-		// ASCII文字はサブヘッダを使わずに直接マップ
-		if (lowByte < subHeader.firstCode || lowByte >= subHeader.firstCode + subHeader.entryCount) {
+				if (charCode < firstCode || charCode >= firstCode + entryCount) {
+					return 0; // 範囲外の場合は.notdefを返す
+				}
+
+				return subtable.glyphIdArray[charCode - firstCode];
+			}
+			break;
+
+		case CmapFormat.MIXED_16_32_BIT_MAPPING:
+			if (isCmapFormat8(subtable)) {
+				// BMP範囲内の文字コードを処理
+				if (charCode <= 0xFFFF) {
+					// charCodeがBMP領域にあり、is32のビットが設定されていない場合は対応がない
+					const byteIndex = Math.floor(charCode / 8);
+					const bitIndex = charCode % 8;
+					const is32Bit = (subtable.is32[byteIndex] & (1 << (7 - bitIndex))) !== 0;
+
+					if (!is32Bit) {
+						// この文字は32ビットではないため、グループ検索の対象外
+						return 0;
+					}
+				}
+
+				// 文字コードに対応するグループを検索
+				for (const group of subtable.groups) {
+					if (charCode >= group.startCharCode && charCode <= group.endCharCode) {
+						const offset = charCode - group.startCharCode;
+						return group.startGlyphID + offset;
+					}
+				}
+
+				return 0; // 見つからない場合は.notdefを返す
+			}
+			break;
+
+		case CmapFormat.TRIMMED_ARRAY:
+			if (isCmapFormat10(subtable)) {
+				const startCharCode = subtable.startCharCode;
+				const endCharCode = startCharCode + subtable.numChars - 1;
+
+				if (charCode < startCharCode || charCode > endCharCode) {
+					return 0; // 範囲外の場合は.notdefを返す
+				}
+
+				const index = charCode - startCharCode;
+				return subtable.glyphs[index];
+			}
+			break;
+
+		case CmapFormat.SEGMENTED_COVERAGE:
+			if (isCmapFormat12(subtable)) {
+				// 二分探索でグループを見つける
+				let left = 0;
+				let right = subtable.numGroups - 1;
+
+				while (left <= right) {
+					const mid = Math.floor((left + right) / 2);
+					const group = subtable.groups[mid];
+
+					if (charCode < group.startCharCode) {
+						right = mid - 1;
+					} else if (charCode > group.endCharCode) {
+						left = mid + 1;
+					} else {
+						// グループが見つかった
+						const offset = charCode - group.startCharCode;
+						return group.startGlyphID + offset;
+					}
+				}
+
+				return 0; // 見つからない場合は.notdefを返す
+			}
+			break;
+
+		case CmapFormat.MANY_TO_ONE_RANGE_MAPPINGS:
+			if (isCmapFormat13(subtable)) {
+				// 二分探索でグループを見つける
+				let left = 0;
+				let right = subtable.numGroups - 1;
+
+				while (left <= right) {
+					const mid = Math.floor((left + right) / 2);
+					const group = subtable.groups[mid];
+
+					if (charCode < group.startCharCode) {
+						right = mid - 1;
+					} else if (charCode > group.endCharCode) {
+						left = mid + 1;
+					} else {
+						// グループが見つかった - このフォーマットでは範囲内の全文字が同じグリフIDにマップされる
+						return group.glyphID;
+					}
+				}
+
+				return 0; // 見つからない場合は.notdefを返す
+			}
+			break;
+
+		case CmapFormat.UNICODE_VARIATION_SEQUENCES:
+			// フォーマット14は基本的に変異セレクタのためのもので、直接文字コードからグリフIDへのマッピングではない
 			return 0;
-		}
-		return subtable.glyphIdArray[lowByte];
 	}
 
-	// 低バイトが範囲外の場合
-	if (lowByte < subHeader.firstCode || lowByte >= subHeader.firstCode + subHeader.entryCount) {
-		return 0;
-	}
-
-	// 対応するグリフIDを計算
-	const glyphIdIndex = subHeader.glyphIdArrayIndex + (lowByte - subHeader.firstCode);
-
-	if (glyphIdIndex >= subtable.glyphIdArray.length) {
-		return 0;
-	}
-
-	const glyphId = subtable.glyphIdArray[glyphIdIndex];
-
-	if (glyphId === 0) {
-		return 0;
-	}
-
-	return (glyphId + subHeader.idDelta) & 0xFFFF;
-}
-
-/**
- * フォーマット8のサブテーブルからグリフIDを取得
- * 
- * @param subtable フォーマット8のサブテーブル
- * @param charCode 文字コード
- */
-function getGlyphIDFromFormat8(subtable: CmapFormat8Subtable, charCode: number): number {
-	// BMP範囲内の文字コードを処理
-	if (charCode <= 0xFFFF) {
-		// charCodeがBMP領域にあり、is32のビットが設定されていない場合は対応がない
-		const byteIndex = Math.floor(charCode / 8);
-		const bitIndex = charCode % 8;
-		const is32Bit = (subtable.is32[byteIndex] & (1 << (7 - bitIndex))) !== 0;
-
-		if (!is32Bit) {
-			// この文字は32ビットではないため、グループ検索の対象外
-			return 0;
-		}
-	}
-
-	// 文字コードに対応するグループを検索
-	for (const group of subtable.groups) {
-		if (charCode >= group.startCharCode && charCode <= group.endCharCode) {
-			const offset = charCode - group.startCharCode;
-			return group.startGlyphID + offset;
-		}
-	}
-
-	return 0; // 見つからない場合は.notdefを返す
-}
-
-/**
- * フォーマット10のサブテーブルからグリフIDを取得
- * 
- * @param subtable フォーマット10のサブテーブル
- * @param charCode 文字コード
- */
-function getGlyphIDFromFormat10(subtable: CmapFormat10Subtable, charCode: number): number {
-	const startCharCode = subtable.startCharCode;
-	const endCharCode = startCharCode + subtable.numChars - 1;
-
-	if (charCode < startCharCode || charCode > endCharCode) {
-		return 0; // 範囲外の場合は.notdefを返す
-	}
-
-	const index = charCode - startCharCode;
-	return subtable.glyphs[index];
-}
-
-/**
- * フォーマット13のサブテーブルからグリフIDを取得
- * 
- * @param subtable フォーマット13のサブテーブル
- * @param charCode 文字コード
- */
-function getGlyphIDFromFormat13(subtable: CmapFormat13Subtable, charCode: number): number {
-	// 二分探索でグループを見つける
-	let left = 0;
-	let right = subtable.numGroups - 1;
-
-	while (left <= right) {
-		const mid = Math.floor((left + right) / 2);
-		const group = subtable.groups[mid];
-
-		if (charCode < group.startCharCode) {
-			right = mid - 1;
-		} else if (charCode > group.endCharCode) {
-			left = mid + 1;
-		} else {
-			// グループが見つかった - このフォーマットでは範囲内の全文字が同じグリフIDにマップされる
-			return group.glyphID;
-		}
-	}
-
-	return 0; // 見つからない場合は.notdefを返す
+	// フォールバック（未知のフォーマットや処理されなかった場合）
+	return 0;
 }
 
 /**
@@ -343,7 +392,7 @@ function getGlyphIDFromFormat13(subtable: CmapFormat13Subtable, charCode: number
  * @param baseChar 基本文字コード
  * @param varSelector 変異セレクタコード
  */
-function getGlyphIDForVariationFromFormat14(
+export function getGlyphIDForVariationFromFormat14(
 	subtable: CmapFormat14Subtable,
 	baseChar: number,
 	varSelector: number
@@ -379,35 +428,6 @@ function getGlyphIDForVariationFromFormat14(
 	}
 
 	return 0; // 対応するマッピングがない場合は.notdefを返す
-}
-
-/**
- * サブテーブルから文字コードに対応するグリフIDを取得
- * 
- * @param subtable cmapサブテーブル
- * @param charCode 文字コード
- */
-export function getGlyphIDFromSubtable(subtable: CmapSubtable, charCode: number): number {
-	switch (subtable.format) {
-		case CmapFormat.BYTE_ENCODING:
-			return getGlyphIDFromFormat0(subtable as CmapFormat0Subtable, charCode);
-		case CmapFormat.HIGH_BYTE_MAPPING:
-			return getGlyphIDFromFormat2(subtable as CmapFormat2Subtable, charCode);
-		case CmapFormat.SEGMENT_MAPPING:
-			return getGlyphIDFromFormat4(subtable as CmapFormat4Subtable, charCode);
-		case CmapFormat.TRIMMED_TABLE_MAPPING:
-			return getGlyphIDFromFormat6(subtable as CmapFormat6Subtable, charCode);
-		case CmapFormat.MIXED_16_32_BIT_MAPPING:
-			return getGlyphIDFromFormat8(subtable as CmapFormat8Subtable, charCode);
-		case CmapFormat.TRIMMED_ARRAY:
-			return getGlyphIDFromFormat10(subtable as CmapFormat10Subtable, charCode);
-		case CmapFormat.SEGMENTED_COVERAGE:
-			return getGlyphIDFromFormat12(subtable as CmapFormat12Subtable, charCode);
-		case CmapFormat.MANY_TO_ONE_RANGE_MAPPINGS:
-			return getGlyphIDFromFormat13(subtable as CmapFormat13Subtable, charCode);
-		default:
-			return 0; // サポートされていないフォーマットの場合は.notdefを返す
-	}
 }
 
 /**
@@ -460,14 +480,16 @@ export function getGlyphIDForVariation(
 	);
 
 	if (format14Record && format14Record.subtable) {
-		const result = getGlyphIDForVariationFromFormat14(
-			format14Record.subtable as CmapFormat14Subtable,
-			baseChar,
-			varSelector
-		);
+		if (isCmapFormat14(format14Record.subtable)) {
+			const result = getGlyphIDForVariationFromFormat14(
+				format14Record.subtable,
+				baseChar,
+				varSelector
+			);
 
-		if (result !== null) {
-			return result;
+			if (result !== null) {
+				return result;
+			}
 		}
 	}
 
@@ -563,121 +585,134 @@ export function getEncodingRecordSummary(record: CmapEncodingRecord): string {
  * 
  * @param subtable cmapサブテーブル
  */
-export function getSubtableCodepointRange(subtable: CmapSubtable): { min: number, max: number } {
+export function getSubtableCodepointRange(subtable: AnyCmapSubtable): { min: number, max: number } {
 	switch (subtable.format) {
 		case CmapFormat.BYTE_ENCODING:
-			return { min: 0, max: 255 };
-
-		case CmapFormat.HIGH_BYTE_MAPPING: {
-			// フォーマット2の場合は最小・最大コードポイントを計算
-			const st = subtable as CmapFormat2Subtable;
-			let min = 0xFFFF;
-			let max = 0;
-
-			for (let highByte = 0; highByte < 256; highByte++) {
-				const subHeaderIndex = st.subHeaderKeys[highByte] / 2;
-				if (subHeaderIndex >= st.subHeaders.length) continue;
-
-				const subHeader = st.subHeaders[subHeaderIndex];
-				if (subHeader.entryCount === 0) continue;
-
-				const firstCode = (highByte << 8) | subHeader.firstCode;
-				const lastCode = (highByte << 8) | (subHeader.firstCode + subHeader.entryCount - 1);
-
-				if (firstCode < min) min = firstCode;
-				if (lastCode > max) max = lastCode;
+			if (isCmapFormat0(subtable)) {
+				return { min: 0, max: 255 };
 			}
+			break;
 
-			return { min, max };
-		}
+		case CmapFormat.HIGH_BYTE_MAPPING:
+			if (isCmapFormat2(subtable)) {
+				// フォーマット2の場合は最小・最大コードポイントを計算
+				let min = 0xFFFF;
+				let max = 0;
 
-		case CmapFormat.SEGMENT_MAPPING: {
-			const st = subtable as CmapFormat4Subtable;
-			let min = 0xFFFF;
-			let max = 0;
+				for (let highByte = 0; highByte < 256; highByte++) {
+					const subHeaderIndex = subtable.subHeaderKeys[highByte] / 2;
+					if (subHeaderIndex >= subtable.subHeaders.length) continue;
 
-			for (let i = 0; i < st.startCode.length; i++) {
-				if (st.startCode[i] < min && st.startCode[i] !== 0xFFFF) {
-					min = st.startCode[i];
+					const subHeader = subtable.subHeaders[subHeaderIndex];
+					if (subHeader.entryCount === 0) continue;
+
+					const firstCode = (highByte << 8) | subHeader.firstCode;
+					const lastCode = (highByte << 8) | (subHeader.firstCode + subHeader.entryCount - 1);
+
+					if (firstCode < min) min = firstCode;
+					if (lastCode > max) max = lastCode;
 				}
-				if (st.endCode[i] > max && st.endCode[i] !== 0xFFFF) {
-					max = st.endCode[i];
-				}
+
+				return { min, max };
 			}
+			break;
 
-			return { min, max };
-		}
+		case CmapFormat.SEGMENT_MAPPING:
+			if (isCmapFormat4(subtable)) {
+				let min = 0xFFFF;
+				let max = 0;
 
-		case CmapFormat.TRIMMED_TABLE_MAPPING: {
-			const st = subtable as CmapFormat6Subtable;
-			return {
-				min: st.firstCode,
-				max: st.firstCode + st.entryCount - 1
-			};
-		}
-
-		case CmapFormat.MIXED_16_32_BIT_MAPPING: {
-			const st = subtable as CmapFormat8Subtable;
-			let min = 0xFFFFFFFF;
-			let max = 0;
-
-			for (const group of st.groups) {
-				if (group.startCharCode < min) {
-					min = group.startCharCode;
+				for (let i = 0; i < subtable.startCode.length; i++) {
+					if (subtable.startCode[i] < min && subtable.startCode[i] !== 0xFFFF) {
+						min = subtable.startCode[i];
+					}
+					if (subtable.endCode[i] > max && subtable.endCode[i] !== 0xFFFF) {
+						max = subtable.endCode[i];
+					}
 				}
-				if (group.endCharCode > max) {
-					max = group.endCharCode;
-				}
+
+				return { min, max };
 			}
+			break;
 
-			return { min, max };
-		}
-
-		case CmapFormat.TRIMMED_ARRAY: {
-			const st = subtable as CmapFormat10Subtable;
-			return {
-				min: st.startCharCode,
-				max: st.startCharCode + st.numChars - 1
-			};
-		}
-
-		case CmapFormat.SEGMENTED_COVERAGE: {
-			const st = subtable as CmapFormat12Subtable;
-			let min = 0xFFFFFFFF;
-			let max = 0;
-
-			for (const group of st.groups) {
-				if (group.startCharCode < min) {
-					min = group.startCharCode;
-				}
-				if (group.endCharCode > max) {
-					max = group.endCharCode;
-				}
+		case CmapFormat.TRIMMED_TABLE_MAPPING:
+			if (isCmapFormat6(subtable)) {
+				return {
+					min: subtable.firstCode,
+					max: subtable.firstCode + subtable.entryCount - 1
+				};
 			}
+			break;
 
-			return { min, max };
-		}
+		case CmapFormat.MIXED_16_32_BIT_MAPPING:
+			if (isCmapFormat8(subtable)) {
+				let min = 0xFFFFFFFF;
+				let max = 0;
 
-		case CmapFormat.MANY_TO_ONE_RANGE_MAPPINGS: {
-			const st = subtable as CmapFormat13Subtable;
-			let min = 0xFFFFFFFF;
-			let max = 0;
-
-			for (const group of st.groups) {
-				if (group.startCharCode < min) {
-					min = group.startCharCode;
+				for (const group of subtable.groups) {
+					if (group.startCharCode < min) {
+						min = group.startCharCode;
+					}
+					if (group.endCharCode > max) {
+						max = group.endCharCode;
+					}
 				}
-				if (group.endCharCode > max) {
-					max = group.endCharCode;
-				}
+
+				return { min, max };
 			}
+			break;
 
-			return { min, max };
-		}
+		case CmapFormat.TRIMMED_ARRAY:
+			if (isCmapFormat10(subtable)) {
+				return {
+					min: subtable.startCharCode,
+					max: subtable.startCharCode + subtable.numChars - 1
+				};
+			}
+			break;
+
+		case CmapFormat.SEGMENTED_COVERAGE:
+			if (isCmapFormat12(subtable)) {
+				let min = 0xFFFFFFFF;
+				let max = 0;
+
+				for (const group of subtable.groups) {
+					if (group.startCharCode < min) {
+						min = group.startCharCode;
+					}
+					if (group.endCharCode > max) {
+						max = group.endCharCode;
+					}
+				}
+
+				return { min, max };
+			}
+			break;
+
+		case CmapFormat.MANY_TO_ONE_RANGE_MAPPINGS:
+			if (isCmapFormat13(subtable)) {
+				let min = 0xFFFFFFFF;
+				let max = 0;
+
+				for (const group of subtable.groups) {
+					if (group.startCharCode < min) {
+						min = group.startCharCode;
+					}
+					if (group.endCharCode > max) {
+						max = group.endCharCode;
+					}
+				}
+
+				return { min, max };
+			}
+			break;
 
 		default:
 			return { min: 0, max: 0 };
 	}
+
+	// デフォルト値
+	return { min: 0, max: 0 };
 }
 
 /**
@@ -695,81 +730,88 @@ export function getCharacterCount(cmap: CmapTable): number {
 	const subtable = record.subtable;
 
 	switch (subtable.format) {
-		case CmapFormat.BYTE_ENCODING: {
-			const st = subtable as CmapFormat0Subtable;
-			// 0でないグリフIDの数をカウント
-			return st.glyphIdArray.filter(gid => gid !== 0).length;
-		}
+		case CmapFormat.BYTE_ENCODING:
+			if (isCmapFormat0(subtable)) {
+				// 0でないグリフIDの数をカウント
+				return subtable.glyphIdArray.filter(gid => gid !== 0).length;
+			}
+			break;
 
-		case CmapFormat.HIGH_BYTE_MAPPING: {
-			const st = subtable as CmapFormat2Subtable;
-			// 単純な推定: 各サブヘッダーのエントリー数の合計
-			return st.subHeaders.reduce((count, subHeader) => {
-				return count + subHeader.entryCount;
-			}, 0);
-		}
+		case CmapFormat.HIGH_BYTE_MAPPING:
+			if (isCmapFormat2(subtable)) {
+				// 単純な推定: 各サブヘッダーのエントリー数の合計
+				return subtable.subHeaders.reduce((count, subHeader) => {
+					return count + subHeader.entryCount;
+				}, 0);
+			}
+			break;
 
-		case CmapFormat.SEGMENT_MAPPING: {
-			const st = subtable as CmapFormat4Subtable;
-			let count = 0;
+		case CmapFormat.SEGMENT_MAPPING:
+			if (isCmapFormat4(subtable)) {
+				let count = 0;
 
-			for (let i = 0; i < st.startCode.length; i++) {
-				if (st.endCode[i] !== 0xFFFF || st.startCode[i] !== 0xFFFF) {
-					count += st.endCode[i] - st.startCode[i] + 1;
+				for (let i = 0; i < subtable.startCode.length; i++) {
+					if (subtable.endCode[i] !== 0xFFFF || subtable.startCode[i] !== 0xFFFF) {
+						count += subtable.endCode[i] - subtable.startCode[i] + 1;
+					}
 				}
+
+				return count;
 			}
+			break;
 
-			return count;
-		}
-
-		case CmapFormat.TRIMMED_TABLE_MAPPING: {
-			const st = subtable as CmapFormat6Subtable;
-			// 0でないグリフIDの数をカウント
-			return st.glyphIdArray.filter(gid => gid !== 0).length;
-		}
-
-		case CmapFormat.MIXED_16_32_BIT_MAPPING: {
-			const st = subtable as CmapFormat8Subtable;
-			let count = 0;
-
-			for (const group of st.groups) {
-				count += group.endCharCode - group.startCharCode + 1;
+		case CmapFormat.TRIMMED_TABLE_MAPPING:
+			if (isCmapFormat6(subtable)) {
+				// 0でないグリフIDの数をカウント
+				return subtable.glyphIdArray.filter(gid => gid !== 0).length;
 			}
+			break;
 
-			return count;
-		}
+		case CmapFormat.MIXED_16_32_BIT_MAPPING:
+			if (isCmapFormat8(subtable)) {
+				let count = 0;
 
-		case CmapFormat.TRIMMED_ARRAY: {
-			const st = subtable as CmapFormat10Subtable;
-			// 0でないグリフIDの数をカウント
-			return st.glyphs.filter(gid => gid !== 0).length;
-		}
+				for (const group of subtable.groups) {
+					count += group.endCharCode - group.startCharCode + 1;
+				}
 
-		case CmapFormat.SEGMENTED_COVERAGE: {
-			const st = subtable as CmapFormat12Subtable;
-			let count = 0;
-
-			for (const group of st.groups) {
-				count += group.endCharCode - group.startCharCode + 1;
+				return count;
 			}
+			break;
 
-			return count;
-		}
-
-		case CmapFormat.MANY_TO_ONE_RANGE_MAPPINGS: {
-			const st = subtable as CmapFormat13Subtable;
-			let count = 0;
-
-			for (const group of st.groups) {
-				count += group.endCharCode - group.startCharCode + 1;
+		case CmapFormat.TRIMMED_ARRAY:
+			if (isCmapFormat10(subtable)) {
+				// 0でないグリフIDの数をカウント
+				return subtable.glyphs.filter(gid => gid !== 0).length;
 			}
+			break;
 
-			return count;
-		}
+		case CmapFormat.SEGMENTED_COVERAGE:
+			if (isCmapFormat12(subtable)) {
+				let count = 0;
 
-		default:
-			return 0;
+				for (const group of subtable.groups) {
+					count += group.endCharCode - group.startCharCode + 1;
+				}
+
+				return count;
+			}
+			break;
+
+		case CmapFormat.MANY_TO_ONE_RANGE_MAPPINGS:
+			if (isCmapFormat13(subtable)) {
+				let count = 0;
+
+				for (const group of subtable.groups) {
+					count += group.endCharCode - group.startCharCode + 1;
+				}
+
+				return count;
+			}
+			break;
 	}
+
+	return 0;
 }
 
 /**
@@ -826,146 +868,150 @@ export function generateUnicodeToGlyphMap(
 
 	// コードポイントの種類によって処理を分ける
 	switch (subtable.format) {
-		case CmapFormat.BYTE_ENCODING: {
-			// Format 0: 256エントリの単純なマッピング
-			const table = subtable as CmapFormat0Subtable;
-			const maxCP = Math.min(255, end);
+		case CmapFormat.BYTE_ENCODING:
+			if (isCmapFormat0(subtable)) {
+				// Format 0: 256エントリの単純なマッピング
+				const maxCP = Math.min(255, end);
 
-			for (let cp = Math.max(0, start); cp <= maxCP; cp++) {
-				const glyphId = table.glyphIdArray[cp];
-				if (glyphId !== 0) { // 0 はたいてい .notdef
-					map.set(cp, glyphId);
+				for (let cp = Math.max(0, start); cp <= maxCP; cp++) {
+					const glyphId = subtable.glyphIdArray[cp];
+					if (glyphId !== 0) { // 0 はたいてい .notdef
+						map.set(cp, glyphId);
+					}
 				}
 			}
 			break;
-		}
 
-		case CmapFormat.HIGH_BYTE_MAPPING: {
-			// Format 2: 2バイト文字エンコーディング
-			const table = subtable as CmapFormat2Subtable;
-			const maxCP = Math.min(0xFFFF, end);
+		case CmapFormat.HIGH_BYTE_MAPPING:
+			if (isCmapFormat2(subtable)) {
+				// Format 2: 2バイト文字エンコーディング
+				const maxCP = Math.min(0xFFFF, end);
 
-			for (let cp = Math.max(0, start); cp <= maxCP; cp++) {
-				const glyphId = getGlyphIDFromFormat2(table, cp);
-				if (glyphId !== 0) {
-					map.set(cp, glyphId);
-				}
-			}
-			break;
-		}
-
-		case CmapFormat.SEGMENT_MAPPING: {
-			// Format 4: セグメントマッピング
-			const table = subtable as CmapFormat4Subtable;
-			const maxCP = Math.min(0xFFFF, end);
-
-			// 各セグメントを走査
-			for (let i = 0; i < table.segCountX2 / 2; i++) {
-				const startCode = table.startCode[i];
-				const endCode = table.endCode[i];
-
-				// 特殊な終了マーカーをスキップ
-				if (startCode === 0xFFFF && endCode === 0xFFFF) continue;
-
-				// 範囲内のコードポイントを処理
-				const segStart = Math.max(startCode, start);
-				const segEnd = Math.min(endCode, maxCP);
-
-				for (let cp = segStart; cp <= segEnd; cp++) {
-					const glyphId = getGlyphIDFromFormat4(table, cp);
+				for (let cp = Math.max(0, start); cp <= maxCP; cp++) {
+					const glyphId = getGlyphIDFromSubtable(subtable, cp);
 					if (glyphId !== 0) {
 						map.set(cp, glyphId);
 					}
 				}
 			}
 			break;
-		}
 
-		case CmapFormat.TRIMMED_TABLE_MAPPING: {
-			// Format 6: トリムテーブルマッピング
-			const table = subtable as CmapFormat6Subtable;
-			const firstCode = table.firstCode;
-			const lastCode = firstCode + table.entryCount - 1;
+		case CmapFormat.SEGMENT_MAPPING:
+			if (isCmapFormat4(subtable)) {
+				// Format 4: セグメントマッピング
+				const maxCP = Math.min(0xFFFF, end);
 
-			const tableStart = Math.max(firstCode, start);
-			const tableEnd = Math.min(lastCode, end);
+				// 各セグメントを走査
+				for (let i = 0; i < subtable.segCountX2 / 2; i++) {
+					const startCode = subtable.startCode[i];
+					const endCode = subtable.endCode[i];
 
-			for (let cp = tableStart; cp <= tableEnd; cp++) {
-				const glyphId = getGlyphIDFromFormat6(table, cp);
-				if (glyphId !== 0) {
-					map.set(cp, glyphId);
+					// 特殊な終了マーカーをスキップ
+					if (startCode === 0xFFFF && endCode === 0xFFFF) continue;
+
+					// 範囲内のコードポイントを処理
+					const segStart = Math.max(startCode, start);
+					const segEnd = Math.min(endCode, maxCP);
+
+					for (let cp = segStart; cp <= segEnd; cp++) {
+						const glyphId = getGlyphIDFromSubtable(subtable, cp);
+						if (glyphId !== 0) {
+							map.set(cp, glyphId);
+						}
+					}
 				}
 			}
 			break;
-		}
+
+		case CmapFormat.TRIMMED_TABLE_MAPPING:
+			if (isCmapFormat6(subtable)) {
+				// Format 6: トリムテーブルマッピング
+				const firstCode = subtable.firstCode;
+				const lastCode = firstCode + subtable.entryCount - 1;
+
+				const tableStart = Math.max(firstCode, start);
+				const tableEnd = Math.min(lastCode, end);
+
+				for (let cp = tableStart; cp <= tableEnd; cp++) {
+					const glyphId = getGlyphIDFromSubtable(subtable, cp);
+					if (glyphId !== 0) {
+						map.set(cp, glyphId);
+					}
+				}
+			}
+			break;
 
 		case CmapFormat.MIXED_16_32_BIT_MAPPING:
-		case CmapFormat.SEGMENTED_COVERAGE: {
-			// Format 8/12: 32ビットのコードポイントをサポート
-			const table = subtable.format === CmapFormat.MIXED_16_32_BIT_MAPPING
-				? subtable as CmapFormat8Subtable
-				: subtable as CmapFormat12Subtable;
+			if (isCmapFormat8(subtable)) {
+				// Format 8: 32ビットのコードポイントをサポート
+				// 各グループを走査
+				for (const group of subtable.groups) {
+					const groupStart = Math.max(group.startCharCode, start);
+					const groupEnd = Math.min(group.endCharCode, end);
 
-			const groups = table.format === CmapFormat.MIXED_16_32_BIT_MAPPING
-				? table.groups
-				: (table as CmapFormat12Subtable).groups;
-
-			// 各グループを走査
-			for (const group of groups) {
-				const groupStart = Math.max(group.startCharCode, start);
-				const groupEnd = Math.min(group.endCharCode, end);
-
-				for (let cp = groupStart; cp <= groupEnd; cp++) {
-					let glyphId: number;
-					if (table.format === CmapFormat.MIXED_16_32_BIT_MAPPING) {
-						glyphId = getGlyphIDFromFormat8(table as CmapFormat8Subtable, cp);
-					} else {
-						glyphId = getGlyphIDFromFormat12(table as CmapFormat12Subtable, cp);
+					for (let cp = groupStart; cp <= groupEnd; cp++) {
+						const glyphId = getGlyphIDFromSubtable(subtable, cp);
+						if (glyphId !== 0) {
+							map.set(cp, glyphId);
+						}
 					}
+				}
+			}
+			break;
 
+		case CmapFormat.TRIMMED_ARRAY:
+			if (isCmapFormat10(subtable)) {
+				// Format 10: トリム配列
+				const startChar = subtable.startCharCode;
+				const endChar = startChar + subtable.numChars - 1;
+
+				const tableStart = Math.max(startChar, start);
+				const tableEnd = Math.min(endChar, end);
+
+				for (let cp = tableStart; cp <= tableEnd; cp++) {
+					const glyphId = getGlyphIDFromSubtable(subtable, cp);
 					if (glyphId !== 0) {
 						map.set(cp, glyphId);
 					}
 				}
 			}
 			break;
-		}
 
-		case CmapFormat.TRIMMED_ARRAY: {
-			// Format 10: トリム配列
-			const table = subtable as CmapFormat10Subtable;
-			const startChar = table.startCharCode;
-			const endChar = startChar + table.numChars - 1;
+		case CmapFormat.SEGMENTED_COVERAGE:
+			if (isCmapFormat12(subtable)) {
+				// Format 12: 32ビットのコードポイントをサポート
+				// 各グループを走査
+				for (const group of subtable.groups) {
+					const groupStart = Math.max(group.startCharCode, start);
+					const groupEnd = Math.min(group.endCharCode, end);
 
-			const tableStart = Math.max(startChar, start);
-			const tableEnd = Math.min(endChar, end);
-
-			for (let cp = tableStart; cp <= tableEnd; cp++) {
-				const glyphId = getGlyphIDFromFormat10(table, cp);
-				if (glyphId !== 0) {
-					map.set(cp, glyphId);
-				}
-			}
-			break;
-		}
-
-		case CmapFormat.MANY_TO_ONE_RANGE_MAPPINGS: {
-			// Format 13: 多対一マッピング
-			const table = subtable as CmapFormat13Subtable;
-
-			// 各グループを走査
-			for (const group of table.groups) {
-				const groupStart = Math.max(group.startCharCode, start);
-				const groupEnd = Math.min(group.endCharCode, end);
-
-				if (group.glyphID !== 0) {
 					for (let cp = groupStart; cp <= groupEnd; cp++) {
-						map.set(cp, group.glyphID);
+						const offset = cp - group.startCharCode;
+						const glyphId = group.startGlyphID + offset;
+						if (glyphId !== 0) {
+							map.set(cp, glyphId);
+						}
 					}
 				}
 			}
 			break;
-		}
+
+		case CmapFormat.MANY_TO_ONE_RANGE_MAPPINGS:
+			if (isCmapFormat13(subtable)) {
+				// Format 13: 多対一マッピング
+				// 各グループを走査
+				for (const group of subtable.groups) {
+					const groupStart = Math.max(group.startCharCode, start);
+					const groupEnd = Math.min(group.endCharCode, end);
+
+					if (group.glyphID !== 0) {
+						for (let cp = groupStart; cp <= groupEnd; cp++) {
+							map.set(cp, group.glyphID);
+						}
+					}
+				}
+			}
+			break;
 	}
 
 	// バリエーションセレクタの処理（フォーマット14）
@@ -973,11 +1019,9 @@ export function generateUnicodeToGlyphMap(
 		record.subtable?.format === CmapFormat.UNICODE_VARIATION_SEQUENCES
 	);
 
-	if (format14Record && format14Record.subtable) {
-		const table = format14Record.subtable as CmapFormat14Subtable;
-
+	if (format14Record && format14Record.subtable && isCmapFormat14(format14Record.subtable)) {
 		// 変異セレクタに基づく追加マッピングの処理
-		// ここでは実装しませんが、必要に応じて実装できます
+		// この部分は実装が複雑なため、必要に応じて実装
 	}
 
 	return map;

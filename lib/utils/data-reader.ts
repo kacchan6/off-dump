@@ -733,6 +733,15 @@ export class DataReader {
 	}
 
 	/**
+	 * 元のバッファを取得する
+	 * 
+	 * @returns 元のArrayBuffer
+	 */
+	getBuffer(): ArrayBuffer {
+		return this.buffer;
+	}
+
+	/**
 	 * 必要なバイト数が利用可能かチェック
 	 * 
 	 * @param bytesNeeded 必要なバイト数

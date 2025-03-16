@@ -3,7 +3,8 @@
  */
 
 import { Font, TableDirectoryEntry } from '../types/font';
-import { UnknownTable } from '../types/tables/unknown';
+import { UnknownTable } from '../types/table';
+import { ArrayBufferRef } from '../utils/array-buffer-ref';
 import { DataReader } from '../utils/data-reader';
 
 /**
@@ -19,14 +20,9 @@ export function parseUnknownTable(
 	entry: TableDirectoryEntry,
 	font: Font
 ): UnknownTable {
-	// テーブルの位置にシーク
-	reader.seek(entry.offset);
-
-	// テーブルの内容をバイナリデータとして読み取る
-	const data = reader.readBytes(entry.length);
-
-	// 不明なテーブルとして返す
+	// 元のバッファとオフセット、長さの情報を使って
+	// 新しいバッファを作成する代わりに情報を保持するだけ
 	return {
-		data
+		data: new ArrayBufferRef(reader.getBuffer(), entry.offset, entry.length)
 	};
 }

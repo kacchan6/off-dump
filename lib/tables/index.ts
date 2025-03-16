@@ -8,8 +8,9 @@ import { Font, TableDirectoryEntry } from '../types/font';
 // テーブルパーサー
 import { parseHeadTable } from './head';
 import { parseUnknownTable } from './unknown';
-import { TableParser } from '../types/tables/parser';
+import { TableParser } from '../types/table';
 import { parseNameTable } from './name';
+import { parseCmapTable } from './cmap';
 
 /**
  * テーブル名とパーサー関数のマッピング
@@ -17,6 +18,7 @@ import { parseNameTable } from './name';
 export const tableParsers: { [tag: string]: TableParser } = {
 	'head': parseHeadTable,
 	'name': parseNameTable,
+	'cmap': parseCmapTable,
 	// 他のテーブルのパーサーをここに追加
 };
 

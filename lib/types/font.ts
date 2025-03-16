@@ -2,6 +2,8 @@
  * OpenType フォント関連の型定義
  */
 
+import { KnownTableTypeMap, UnknownTable } from "./table";
+
 /**
  * テーブルメタデータ情報
  */
@@ -36,11 +38,11 @@ export interface TableMetaData {
 /**
  * フォントテーブルのデータと詳細情報を含む結合インターフェース
  */
-export interface FontTable {
+export interface FontTable<T = any> {
 	/**
 	 * テーブルの詳細データ
 	 */
-	table: any;
+	table: T;
 
 	/**
 	 * テーブルのメタデータ
@@ -72,6 +74,13 @@ export interface TableDirectoryEntry {
 	 */
 	length: number;
 }
+
+/**
+ * すべてのテーブルタイプのマッピング（既知のテーブル + 未知のテーブル）
+ */
+export type TableTypeMap = KnownTableTypeMap & {
+	[key: string]: UnknownTable;
+};
 
 /**
  * OpenTypeフォントの基本インターフェース
@@ -110,7 +119,11 @@ export interface Font {
 	/**
 	 * ロードされたテーブル
 	 */
-	tables: { [tableName: string]: FontTable };
+	tables: {
+		[K in keyof KnownTableTypeMap]?: FontTable<KnownTableTypeMap[K]>;
+	} & {
+		[key: string]: FontTable<UnknownTable>;
+	};
 }
 
 /**

@@ -1,174 +1,61 @@
 /**
  * otf-dump
  * Development entry point
+ * JSONダンプ機能
  */
 
 import * as fs from 'fs';
+import * as path from 'path';
 import { FontLoader } from './font-loader';
+import * as rimraf from 'rimraf';
+import { ArrayBufferRef } from './utils/array-buffer-ref';
+import { generateUnicodeMapObject } from './utils/tables/cmap';
+import { CmapTable } from './types/tables/cmap';
 
 /**
- * 値を適切な文字列表現に変換する
+ * 特殊なデータ型を変換してJSON化可能にする
  */
-function formatValue(value: any): string {
-	if (value === null || value === undefined) {
-		return String(value);
-	}
+function jsonReplacer(key: string, value: any): any {
+	if (value instanceof ArrayBufferRef) {
+		// ArrayBufferRefをその文字列表現に変換
+		return value.toString();
+	} else if (value instanceof ArrayBuffer) {
+		// 通常のArrayBufferは型情報のみを出力
+		return {
+			type: 'ArrayBuffer',
+			byteLength: value.byteLength
+		};
+	} else if (value instanceof Uint8Array ||
+		value instanceof Uint16Array ||
+		value instanceof Uint32Array ||
+		value instanceof Int8Array ||
+		value instanceof Int16Array ||
+		value instanceof Int32Array) {
 
-	if (value instanceof Date) {
+		// TypedArrayは型情報のみを出力
+		return {
+			type: value.constructor.name,
+			length: value.length
+		};
+	} else if (value instanceof Date) {
+		// 日付をISO文字列に変換
 		return value.toISOString();
 	}
 
-	if (value instanceof ArrayBuffer) {
-		return `[ArrayBuffer: ${value.byteLength} bytes]`;
-	}
-
-	if (value instanceof Uint8Array || value instanceof Uint16Array ||
-		value instanceof Uint32Array || value instanceof Int8Array ||
-		value instanceof Int16Array || value instanceof Int32Array) {
-		return `[TypedArray: ${value.length} elements]`;
-	}
-
-	if (typeof value === 'object') {
-		return `[Object]`;
-	}
-
-	return String(value);
+	return value;
 }
 
 /**
- * オブジェクトの階層的な表示
+ * テーブル名を有効なファイル名に変換する
+ * スペースや記号をアンダースコアに置換
  */
-function displayObject(
-	obj: any,
-	indent = 0,
-	maxDepth = 10,
-	path = '',
-	visitedObjects = new Set()
-) {
-	// 最大深さチェック
-	if (indent > maxDepth) {
-		console.log(`${' '.repeat(indent * 2)}... (max depth reached)`);
-		return;
-	}
-
-	// nullまたはundefinedの場合
-	if (obj === null || obj === undefined) {
-		console.log(`${' '.repeat(indent * 2)}${formatValue(obj)}`);
-		return;
-	}
-
-	// 循環参照チェック
-	if (typeof obj === 'object' && obj !== null) {
-		if (visitedObjects.has(obj)) {
-			console.log(`${' '.repeat(indent * 2)}[Circular reference to ${path}]`);
-			return;
-		}
-		visitedObjects.add(obj);
-	}
-
-	// プリミティブ値の場合
-	if (typeof obj !== 'object' || obj === null) {
-		console.log(`${' '.repeat(indent * 2)}${formatValue(obj)}`);
-		return;
-	}
-
-	// ArrayBufferやTypedArrayの場合
-	if (obj instanceof ArrayBuffer ||
-		obj instanceof Uint8Array || obj instanceof Uint16Array ||
-		obj instanceof Uint32Array || obj instanceof Int8Array ||
-		obj instanceof Int16Array || obj instanceof Int32Array) {
-		console.log(`${' '.repeat(indent * 2)}${formatValue(obj)}`);
-		return;
-	}
-
-	// Dateオブジェクトの場合
-	if (obj instanceof Date) {
-		console.log(`${' '.repeat(indent * 2)}${formatValue(obj)}`);
-		return;
-	}
-
-	// 配列の場合
-	if (Array.isArray(obj)) {
-		if (obj.length === 0) {
-			console.log(`${' '.repeat(indent * 2)}[]`);
-			return;
-		}
-
-		console.log(`${' '.repeat(indent * 2)}[`);
-		obj.forEach((item, index) => {
-			const itemPath = `${path}[${index}]`;
-			// 単純な値は同じ行に、オブジェクトは階層的に表示
-			if (typeof item !== 'object' || item === null || item instanceof Date ||
-				item instanceof ArrayBuffer || item instanceof Uint8Array) {
-				console.log(`${' '.repeat((indent + 1) * 2)}${formatValue(item)},`);
-			} else {
-				console.log(`${' '.repeat((indent + 1) * 2)}${index}: `);
-				displayObject(item, indent + 2, maxDepth, itemPath, visitedObjects);
-			}
-		});
-		console.log(`${' '.repeat(indent * 2)}]`);
-		return;
-	}
-
-	// 通常のオブジェクトの場合
-	const entries = Object.entries(obj);
-	if (entries.length === 0) {
-		console.log(`${' '.repeat(indent * 2)}{}`);
-		return;
-	}
-
-	if (indent === 0) {
-		// トップレベルのオブジェクトはそのまま表示
-		entries.forEach(([key, value]) => {
-			const valuePath = path ? `${path}.${key}` : key;
-			console.log(`${' '.repeat((indent + 1) * 2)}${key}: `);
-			displayObject(value, indent + 2, maxDepth, valuePath, visitedObjects);
-		});
-	} else {
-		// 入れ子オブジェクトは階層的に表示
-		console.log(`${' '.repeat(indent * 2)}{`);
-		entries.forEach(([key, value]) => {
-			const valuePath = path ? `${path}.${key}` : key;
-
-			// 単純な値は同じ行に、オブジェクトは階層的に表示
-			if (typeof value !== 'object' || value === null || value instanceof Date ||
-				value instanceof ArrayBuffer || value instanceof Uint8Array) {
-				console.log(`${' '.repeat((indent + 1) * 2)}${key}: ${formatValue(value)},`);
-			} else {
-				console.log(`${' '.repeat((indent + 1) * 2)}${key}: `);
-				displayObject(value, indent + 2, maxDepth, valuePath, visitedObjects);
-			}
-		});
-		console.log(`${' '.repeat(indent * 2)}},`);
-	}
-}
-
-/**
- * テーブルの詳細を表示
- */
-function displayTableDetails(tableTag: string, fontTable: any) {
-	// テーブルが未解析かどうか確認
-	const isUnknownTable = 'data' in fontTable.table;
-
-	// テーブルの表示名
-	const tableDisplayName = isUnknownTable
-		? `${tableTag} Table Details (未解析のテーブル)`
-		: `${tableTag} Table Details`;
-
-	console.log(`\n  ${tableDisplayName}:`);
-
-	// メタデータ表示
-	console.log('  meta:');
-	displayObject(fontTable.meta, 2);
-
-	// テーブル詳細表示
-	console.log('  table:');
-	displayObject(fontTable.table, 2);
+function sanitizeTableName(tableName: string): string {
+	return tableName.replace(/[^a-zA-Z0-9]/g, '_');
 }
 
 /**
  * 開発用メイン関数
- * フォントファイルを読み込んでダンプする
+ * フォントファイルを読み込んでJSONでダンプする
  */
 function devMain(): void {
 	const args = process.argv.slice(2);
@@ -177,6 +64,7 @@ function devMain(): void {
 		process.exit(1);
 	}
 
+	// フォントファイルパスを取得
 	const fontPath = args[0];
 	console.log(`Opening font file: ${fontPath}`);
 
@@ -197,23 +85,45 @@ function devMain(): void {
 
 		console.log(`Loaded ${fonts.length} font(s)`);
 
-		// 各フォントの情報を表示
-		fonts.forEach((font, index) => {
-			console.log(`\nFont #${index + 1}:`);
-			console.log(`  Version: ${font.version}`);
-			console.log(`  Number of tables: ${font.numTables}`);
+		// 出力ディレクトリを作成
+		const fontBaseName = path.basename(fontPath, path.extname(fontPath));
+		const outputDir = path.join(process.cwd(), 'out', fontBaseName);
 
-			// テーブル一覧を表示
-			console.log('\n  Tables:');
-			Object.entries(font.tables).forEach(([tag, table]) => {
-				console.log(`    ${tag}: ${table.meta.length} bytes`);
-			});
+		if (fs.existsSync(outputDir)) {
+			rimraf.sync(outputDir);
+		}
+		fs.mkdirSync(outputDir, { recursive: true });
 
-			// 各テーブルの詳細を表示
-			Object.entries(font.tables).forEach(([tag, table]) => {
-				displayTableDetails(tag, table);
-			});
+		// フォント情報の抽出
+		fonts.forEach((font, fontIndex) => {
+			// フォント情報をfont.jsonに出力（複数フォントの場合はインデックスを追加）
+			const fontFileName = fonts.length > 1 ? `font_${fontIndex + 1}.json` : 'font.json';
+			const fontFilePath = path.join(outputDir, fontFileName);
+
+			// フォント自体の基本情報を抽出
+			const fontInfo = {
+				version: font.version,
+				numTables: font.numTables,
+				searchRange: font.searchRange,
+				entrySelector: font.entrySelector,
+				rangeShift: font.rangeShift,
+				tableDirectory: font.tableDirectory
+			};
+
+			fs.writeFileSync(fontFilePath, JSON.stringify(fontInfo, jsonReplacer, 2));
+			console.log(`Saved font information to ${fontFilePath}`);
+
+			// 各テーブルを個別のJSONファイルに出力
+			for (const [tableName, tableData] of Object.entries(font.tables)) {
+				const tableFileName = `${sanitizeTableName(tableName)}.json`;
+				const tableFilePath = path.join(outputDir, tableFileName);
+
+				fs.writeFileSync(tableFilePath, JSON.stringify(tableData, jsonReplacer, 2));
+				console.log(`Saved table '${tableName}' to ${tableFilePath}`);
+			}
 		});
+
+		console.log(`Successfully exported font data to ${outputDir}/`);
 
 	} catch (error) {
 		console.error('Error parsing font:', error);

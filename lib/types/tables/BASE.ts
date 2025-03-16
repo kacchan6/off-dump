@@ -45,7 +45,12 @@ export interface BaseAnchor {
 	yCoordinate: number;
 
 	/**
-	 * デバイステーブル（オプション）
+	 * アンカーポイント（フォーマット2の場合）
+	 */
+	anchorPoint?: number;
+
+	/**
+	 * デバイステーブル（フォーマット3の場合）
 	 */
 	deviceTable?: {
 		xDeviceTable?: DeviceTable;
@@ -54,63 +59,73 @@ export interface BaseAnchor {
 }
 
 /**
- * スクリプトベースラインテーブル
+ * ベースライン値テーブル
  */
-export interface BaseScriptTable {
+export interface BaseValuesTable {
 	/**
-	 * デフォルトベースラインタグ
+	 * デフォルトベースラインタグのインデックス
 	 */
-	defaultBaselineTag: BaselineTag;
+	defaultIndex: number;
 
 	/**
-	 * ベースラインレコード
+	 * ベースラインの数
 	 */
-	baselineRecords: BaselineRecord[];
+	baseCoordCount: number;
+
+	/**
+	 * ベースライン座標テーブル（各ベースラインのオフセット）
+	 */
+	baseCoords: BaseCoordTable[];
 }
 
 /**
- * ベースラインレコード
+ * 最小/最大ベースライン値テーブル
  */
-export interface BaselineRecord {
+export interface MinMaxTable {
 	/**
-	 * ベースラインタグ
+	 * 最小ベースライン値のオフセット
 	 */
-	baselineTag: BaselineTag;
+	minCoord?: BaseCoordTable;
 
 	/**
-	 * ベースラインアンカー
+	 * 最大ベースライン値のオフセット
 	 */
-	baselineAnchor: BaseAnchor;
+	maxCoord?: BaseCoordTable;
+
+	/**
+	 * 機能変異インデックスのオフセット（バージョン1.1の場合）
+	 */
+	featMinMaxRecord?: FeatMinMaxRecord[];
 }
 
 /**
- * 座標マップテーブル
+ * 機能変異レコード
+ */
+export interface FeatMinMaxRecord {
+	/**
+	 * 機能タグ
+	 */
+	featureTableTag: string;
+
+	/**
+	 * 最小座標テーブル（オプション）
+	 */
+	minCoord?: BaseCoordTable;
+
+	/**
+	 * 最大座標テーブル（オプション）
+	 */
+	maxCoord?: BaseCoordTable;
+}
+
+/**
+ * 座標テーブル
  */
 export interface BaseCoordTable {
 	/**
-	 * デフォルト座標値
+	 * 座標フォーマット
 	 */
-	defaultCoordinate: number;
-
-	/**
-	 * 座標レコード（特定のスクリプトやランゲージの座標）
-	 */
-	coordinateRecords?: BaseCoordinateRecord[];
-}
-
-/**
- * 座標レコード
- */
-export interface BaseCoordinateRecord {
-	/**
-	 * スクリプトタグ
-	 */
-	scriptTag: string;
-
-	/**
-	 * ランゲージタグ（オプション）
-	 */
-	languageTag?: string;
+	baseCoordFormat: number;
 
 	/**
 	 * 座標値
@@ -118,9 +133,99 @@ export interface BaseCoordinateRecord {
 	coordinate: number;
 
 	/**
-	 * デバイステーブル（オプション）
+	 * 参照ポイント（フォーマット2の場合）
+	 */
+	referenceGlyph?: number;
+
+	/**
+	 * ベースラインポイント（フォーマット2の場合）
+	 */
+	baselineIndex?: number;
+
+	/**
+	 * デバイステーブル（フォーマット3の場合）
 	 */
 	deviceTable?: DeviceTable;
+}
+
+/**
+ * スクリプトテーブル
+ */
+export interface BaseScriptTable {
+	/**
+	 * ベースライン値テーブル（オプション）
+	 */
+	baseValues?: BaseValuesTable;
+
+	/**
+	 * デフォルト最小/最大テーブル（オプション）
+	 */
+	defaultMinMax?: MinMaxTable;
+
+	/**
+	 * 言語システムテーブル（オプション）
+	 */
+	baseLangSysRecords?: BaseLangSysRecord[];
+}
+
+/**
+ * 言語システムレコード
+ */
+export interface BaseLangSysRecord {
+	/**
+	 * 言語システムタグ
+	 */
+	baseLangSysTag: string;
+
+	/**
+	 * 最小/最大テーブル
+	 */
+	minMax: MinMaxTable;
+}
+
+/**
+ * スクリプトレコード
+ */
+export interface BaseScriptRecord {
+	/**
+	 * スクリプトタグ
+	 */
+	baseScriptTag: string;
+
+	/**
+	 * スクリプトテーブル
+	 */
+	baseScript: BaseScriptTable;
+}
+
+/**
+ * タグリストテーブル
+ */
+export interface BaseTagListTable {
+	/**
+	 * ベースラインタグの数
+	 */
+	baseTagCount: number;
+
+	/**
+	 * ベースラインタグの配列
+	 */
+	baselineTags: BaselineTag[];
+}
+
+/**
+ * 軸テーブル
+ */
+export interface BaseAxisTable {
+	/**
+	 * ベースラインタグリスト
+	 */
+	baseTagList: BaseTagListTable;
+
+	/**
+	 * スクリプトレコードのリスト
+	 */
+	baseScriptList: BaseScriptRecord[];
 }
 
 /**
@@ -133,32 +238,12 @@ export interface BaseTable {
 	version: BaseVersion;
 
 	/**
-	 * スクリプトリストオフセット
-	 */
-	scriptListOffset: number;
-
-	/**
-	 * 水平座標オフセット
-	 */
-	horizAxisOffset?: number;
-
-	/**
-	 * 垂直座標オフセット
-	 */
-	vertAxisOffset?: number;
-
-	/**
-	 * スクリプトリスト
-	 */
-	scriptList: BaseScriptTable[];
-
-	/**
-	 * 水平座標テーブル（オプション）
+	 * 水平軸テーブル（オプション）
 	 */
 	horizAxis?: BaseAxisTable;
 
 	/**
-	 * 垂直座標テーブル（オプション）
+	 * 垂直軸テーブル（オプション）
 	 */
 	vertAxis?: BaseAxisTable;
 
@@ -166,24 +251,4 @@ export interface BaseTable {
 	 * バリエーションストアへのオフセット（バージョン1.1の場合のみ）
 	 */
 	itemVarStoreOffset?: number;
-}
-
-/**
- * BASEテーブルの軸情報
- */
-export interface BaseAxisTable {
-	/**
-	 * ベースコードテーブル
-	 */
-	baseCoordTable: BaseCoordTable;
-
-	/**
-	 * 最小座標テーブル（オプション）
-	 */
-	minCoordTable?: BaseCoordTable;
-
-	/**
-	 * 最大座標テーブル（オプション）
-	 */
-	maxCoordTable?: BaseCoordTable;
 }

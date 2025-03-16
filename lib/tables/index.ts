@@ -20,6 +20,8 @@ import { parseVmtxTable } from './vmtx';
 import { ArrayBufferRef } from '../utils/array-buffer-ref';
 import { parseDsigTable } from './DSIG';
 import { parseVorgTable } from './VORG';
+import { parseGposTable } from './GPOS';
+import { parseGsubTable } from './GSUB';
 
 /**
  * テーブル名とパーサー関数のマッピング
@@ -37,6 +39,8 @@ export const tableParsers: { [tag: string]: TableParser } = {
 	'vmtx': parseVmtxTable,
 	'DSIG': parseDsigTable,
 	'VORG': parseVorgTable,
+	'GPOS': parseGposTable,
+	'GSUB': parseGsubTable,
 	// 他のテーブルのパーサーをここに追加
 };
 

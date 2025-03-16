@@ -7,8 +7,6 @@ import { DataReader } from '../../utils/data-reader';
 import {
 	GsubLookupType, GsubSubTable, GsubLookupTable
 } from '../../types/tables/GSUB';
-
-// 必要なパーサーをインポート
 import { parseSingleSubstitutionSubtable } from './gsub-lookup1';
 import { parseMultipleSubstitutionSubtable } from './gsub-lookup2';
 import { parseAlternateSubstitutionSubtable } from './gsub-lookup3';

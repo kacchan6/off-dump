@@ -11,8 +11,6 @@ import { GsubTable, GsubHeader, GsubVersion } from '../types/tables/GSUB';
 import {
 	parseScriptListTable, parseFeatureListTable, parseLookupListTable
 } from './gposgsub/common';
-
-// GSUBルックアップ解析関数をインポート
 import { parseGsubLookupTable } from './gposgsub/gsub-common';
 
 /**

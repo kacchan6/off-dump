@@ -26,6 +26,8 @@ OpenType、TrueTypeのフォントのパーサをTypeScriptを使用してNode.j
 
 # 課題と検証
 
+- BASEテーブル
+	- 3.5 Sonnetだと出力がおかしい
 - TrueTypeCollection
 	- テーブルが既出のコレクション内のフォントを参照するケースがある
 		- 単純な構造ではない

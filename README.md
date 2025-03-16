@@ -11,6 +11,7 @@ OpenType、TrueTypeのフォントのパーサをTypeScriptを使用してNode.j
 
 - 戻り値の型は全て自明であれば省略、クラスのpublic宣言も不要
 - importなどでindexを省略しない
+- enumはconst enumを使用する
 
 ## 構造
 

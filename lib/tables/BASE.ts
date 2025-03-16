@@ -20,8 +20,11 @@ import {
 	BaselineTag
 } from '../types/tables/BASE';
 
-function parseDeviceTable(reader: DataReader, offset: number): DeviceTable {
-	reader.seek(offset);
+/**
+ * デバイステーブルを解析する
+ */
+function parseDeviceTable(reader: DataReader, tableStart: number, offset: number): DeviceTable {
+	reader.seek(tableStart + offset);
 
 	const startSize = reader.readUInt16();
 	const endSize = reader.readUInt16();
@@ -88,9 +91,8 @@ function parseDeviceTable(reader: DataReader, offset: number): DeviceTable {
 /**
  * ベースラインアンカーを解析する
  */
-function parseBaseAnchor(reader: DataReader, baseOffset: number): BaseAnchor {
-	const anchorOffset = reader.getOffset();
-	reader.seek(baseOffset + anchorOffset);
+function parseBaseAnchor(reader: DataReader, tableStart: number, anchorOffset: number): BaseAnchor {
+	reader.seek(tableStart + anchorOffset);
 
 	const format = reader.readUInt16();
 	const xCoordinate = reader.readInt16();
@@ -102,8 +104,12 @@ function parseBaseAnchor(reader: DataReader, baseOffset: number): BaseAnchor {
 		yCoordinate
 	};
 
-	// フォーマット2の場合: デバイステーブルへのオフセット
+	// フォーマット2の場合: アンカーポイント
 	if (format === 2) {
+		anchor.anchorPoint = reader.readUInt16();
+	}
+	// フォーマット3の場合: デバイステーブル
+	else if (format === 3) {
 		const xDeviceOffset = reader.readUInt16();
 		const yDeviceOffset = reader.readUInt16();
 
@@ -111,11 +117,11 @@ function parseBaseAnchor(reader: DataReader, baseOffset: number): BaseAnchor {
 		const deviceTable: BaseAnchor['deviceTable'] = {};
 
 		if (xDeviceOffset !== 0) {
-			deviceTable.xDeviceTable = parseDeviceTable(reader, baseOffset + anchorOffset + xDeviceOffset);
+			deviceTable.xDeviceTable = parseDeviceTable(reader, tableStart + anchorOffset, xDeviceOffset);
 		}
 
 		if (yDeviceOffset !== 0) {
-			deviceTable.yDeviceTable = parseDeviceTable(reader, baseOffset + anchorOffset + yDeviceOffset);
+			deviceTable.yDeviceTable = parseDeviceTable(reader, tableStart + anchorOffset, yDeviceOffset);
 		}
 
 		// デバイステーブルが存在する場合のみ追加
@@ -130,9 +136,8 @@ function parseBaseAnchor(reader: DataReader, baseOffset: number): BaseAnchor {
 /**
  * ベースライン座標テーブルを解析する
  */
-function parseBaseCoordTable(reader: DataReader, baseOffset: number): BaseCoordTable {
-	const coordOffset = reader.getOffset();
-	reader.seek(baseOffset + coordOffset);
+function parseBaseCoordTable(reader: DataReader, tableStart: number, coordOffset: number): BaseCoordTable {
+	reader.seek(tableStart + coordOffset);
 
 	const defaultCoordinate = reader.readInt16();
 	const coordinateRecordCount = reader.readUInt16();
@@ -158,7 +163,7 @@ function parseBaseCoordTable(reader: DataReader, baseOffset: number): BaseCoordT
 
 		// デバイステーブルが存在する場合は解析
 		if (deviceTableOffset !== 0) {
-			record.deviceTable = parseDeviceTable(reader, baseOffset + coordOffset + deviceTableOffset);
+			record.deviceTable = parseDeviceTable(reader, tableStart + coordOffset, deviceTableOffset);
 		}
 
 		coordinateRecords.push(record);
@@ -173,15 +178,15 @@ function parseBaseCoordTable(reader: DataReader, baseOffset: number): BaseCoordT
 /**
  * ベースライン軸テーブルを解析する
  */
-function parseBaseAxisTable(reader: DataReader, baseOffset: number): BaseAxisTable {
-	const axisOffset = reader.getOffset();
-	reader.seek(baseOffset + axisOffset);
+function parseBaseAxisTable(reader: DataReader, tableStart: number, axisOffset: number): BaseAxisTable {
+	reader.seek(tableStart + axisOffset);
 
 	const baseCoordOffset = reader.readUInt16();
 	const minCoordOffset = reader.readUInt16();
 	const maxCoordOffset = reader.readUInt16();
 
-	const baseCoordTable = parseBaseCoordTable(reader, baseOffset + axisOffset + baseCoordOffset);
+	// ベース座標テーブルを解析
+	const baseCoordTable = parseBaseCoordTable(reader, tableStart + axisOffset, baseCoordOffset);
 
 	const axisTable: BaseAxisTable = {
 		baseCoordTable
@@ -189,35 +194,43 @@ function parseBaseAxisTable(reader: DataReader, baseOffset: number): BaseAxisTab
 
 	// 最小座標テーブルがある場合
 	if (minCoordOffset !== 0) {
-		axisTable.minCoordTable = parseBaseCoordTable(reader, baseOffset + axisOffset + minCoordOffset);
+		axisTable.minCoordTable = parseBaseCoordTable(reader, tableStart + axisOffset, minCoordOffset);
 	}
 
 	// 最大座標テーブルがある場合
 	if (maxCoordOffset !== 0) {
-		axisTable.maxCoordTable = parseBaseCoordTable(reader, baseOffset + axisOffset + maxCoordOffset);
+		axisTable.maxCoordTable = parseBaseCoordTable(reader, tableStart + axisOffset, maxCoordOffset);
 	}
 
 	return axisTable;
 }
 
 /**
- * ベースラインテーブルを解析する
+ * ベースラインスクリプトテーブルを解析する
  */
-function parseBaseScriptTable(reader: DataReader, baseOffset: number): BaseScriptTable {
-	const scriptOffset = reader.getOffset();
-	reader.seek(baseOffset + scriptOffset);
+function parseBaseScriptTable(reader: DataReader, tableStart: number, scriptOffset: number): BaseScriptTable {
+	// スクリプトテーブル位置に移動
+	reader.seek(tableStart + scriptOffset);
 
+	// デフォルトのベースラインタグとレコード数を読み取る
 	const defaultBaselineTag = reader.readTag() as BaselineTag;
 	const baselineRecordCount = reader.readUInt16();
 	const baselineRecords: BaselineRecord[] = [];
 
+	// ベースラインレコードを読み取る
 	for (let i = 0; i < baselineRecordCount; i++) {
 		const baselineTag = reader.readTag() as BaselineTag;
 		const baselineAnchorOffset = reader.readUInt16();
 
+		// 有効なオフセットの場合のみ処理
+		if (baselineAnchorOffset === 0) {
+			continue;
+		}
+
+		// ベースラインアンカーを解析
 		baselineRecords.push({
 			baselineTag,
-			baselineAnchor: parseBaseAnchor(reader, baseOffset + scriptOffset)
+			baselineAnchor: parseBaseAnchor(reader, tableStart + scriptOffset, baselineAnchorOffset)
 		});
 	}
 
@@ -227,67 +240,81 @@ function parseBaseScriptTable(reader: DataReader, baseOffset: number): BaseScrip
 	};
 }
 
+/**
+ * BASEテーブルをパースする
+ */
 export function parseBaseTable(
 	reader: DataReader,
 	entry: TableDirectoryEntry,
 	font: Font
 ): BaseTable {
-	// テーブルのサブリーダーを作成
-	reader.seek(entry.offset);
-	const tableReader = reader.createSubReader(entry.length);
+	const tableStart = entry.offset;
+
+	// テーブルの先頭に移動
+	reader.seek(tableStart);
 
 	// メジャーバージョンとマイナーバージョンを16ビット単位で読み取る
-	const majorVersion = tableReader.readUInt16();
-	const minorVersion = tableReader.readUInt16();
+	const majorVersion = reader.readUInt16();
+	const minorVersion = reader.readUInt16();
 
 	// バージョンを結合
 	const version = (majorVersion << 16) | minorVersion;
 
-	const scriptListOffset = tableReader.readUInt16();
-	const horizAxisOffset = tableReader.readUInt16();
-	const vertAxisOffset = tableReader.readUInt16();
+	// オフセットを読み込む
+	const scriptListOffset = reader.readUInt16();
+	const horizAxisOffset = reader.readUInt16();
+	const vertAxisOffset = reader.readUInt16();
 
 	// バージョン1.1の場合は追加のフィールドを読み取る
 	let itemVarStoreOffset = 0;
 	if (version === BaseVersion.VERSION_1_1) {
-		itemVarStoreOffset = tableReader.readUInt32();
-	}
-
-	// スクリプトリストのカウントを読み取る
-	const scriptCount = tableReader.readUInt16();
-
-	// スクリプトオフセットの配列を読み取る
-	const scriptOffsets: number[] = [];
-	for (let i = 0; i < scriptCount; i++) {
-		scriptOffsets.push(tableReader.readUInt16() + entry.offset + scriptListOffset);
-	}
-
-	// 各スクリプトを解析
-	const scriptList: BaseScriptTable[] = [];
-	for (const scriptOffset of scriptOffsets) {
-		scriptList.push(parseBaseScriptTable(reader, entry.offset));
+		itemVarStoreOffset = reader.readUInt32();
 	}
 
 	// 結果オブジェクトを構築
 	const baseTable: BaseTable = {
 		version: version as BaseVersion,
 		scriptListOffset,
-		scriptList
+		scriptList: []
 	};
 
-	// 水平軸テーブルがある場合
-	if (horizAxisOffset !== 0) {
+	// スクリプトリストを読み込む
+	if (scriptListOffset > 0) {
+		// スクリプトリストテーブル位置に移動
+		reader.seek(tableStart + scriptListOffset);
+
+		// スクリプト数を読み取る
+		const scriptCount = reader.readUInt16();
+
+		// スクリプトオフセットの配列を読み取る
+		const scriptOffsets: number[] = [];
+		for (let i = 0; i < scriptCount; i++) {
+			const scriptOffset = reader.readUInt16();
+			if (scriptOffset > 0) {
+				scriptOffsets.push(scriptOffset);
+			}
+		}
+
+		// 各スクリプトテーブルを解析
+		for (const scriptOffset of scriptOffsets) {
+			const scriptTable = parseBaseScriptTable(reader, tableStart + scriptListOffset, scriptOffset);
+			baseTable.scriptList.push(scriptTable);
+		}
+	}
+
+	// 水平軸テーブルを読み込む
+	if (horizAxisOffset > 0) {
 		baseTable.horizAxisOffset = horizAxisOffset;
-		baseTable.horizAxis = parseBaseAxisTable(reader, entry.offset + horizAxisOffset);
+		baseTable.horizAxis = parseBaseAxisTable(reader, tableStart, horizAxisOffset);
 	}
 
-	// 垂直軸テーブルがある場合
-	if (vertAxisOffset !== 0) {
+	// 垂直軸テーブルを読み込む
+	if (vertAxisOffset > 0) {
 		baseTable.vertAxisOffset = vertAxisOffset;
-		baseTable.vertAxis = parseBaseAxisTable(reader, entry.offset + vertAxisOffset);
+		baseTable.vertAxis = parseBaseAxisTable(reader, tableStart, vertAxisOffset);
 	}
 
-	// バージョン1.1の場合、itemVarStoreOffsetを追加
+	// バージョン1.1の場合は項目変更ストアオフセットを追加
 	if (version === BaseVersion.VERSION_1_1 && itemVarStoreOffset !== 0) {
 		baseTable.itemVarStoreOffset = itemVarStoreOffset;
 	}

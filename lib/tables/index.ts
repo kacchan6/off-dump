@@ -13,6 +13,7 @@ import { parseNameTable } from './name';
 import { parseCmapTable } from './cmap';
 import { parseHheaTable } from './hhea';
 import { parseOS2Table } from './OS_2';
+import { parsePostTable } from './post';
 
 /**
  * テーブル名とパーサー関数のマッピング
@@ -23,6 +24,7 @@ export const tableParsers: { [tag: string]: TableParser } = {
 	'cmap': parseCmapTable,
 	'hhea': parseHheaTable,
 	'OS/2': parseOS2Table,
+	'post': parsePostTable,
 	// 他のテーブルのパーサーをここに追加
 };
 

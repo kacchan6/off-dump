@@ -24,6 +24,12 @@ OpenType、TrueTypeのフォントのパーサをTypeScriptを使用してNode.j
 
 という構造となります。
 
+# 課題と検証
+
+- TrueTypeCollection
+	- テーブルが既出のコレクション内のフォントを参照するケースがある
+		- 単純な構造ではない
+
 # 参考資料
 
 - OpenTypeフォント仕様書

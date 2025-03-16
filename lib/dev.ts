@@ -10,6 +10,7 @@ import { FontLoader } from './font-loader';
 import * as rimraf from 'rimraf';
 import { ArrayBufferRef } from './utils/array-buffer-ref';
 import { executePlugins } from './utils/output/index';
+import { UnknownTable } from './types/table';
 
 /**
  * 特殊なデータ型を変換してJSON化可能にする
@@ -119,7 +120,13 @@ function devMain(): void {
 
 			// 各テーブルを個別のJSONファイルに出力
 			for (const [tableName, tableData] of Object.entries(font.tables)) {
-				const tableFileName = `${sanitizeTableName(tableName)}.json`;
+				// テーブルが不明な場合は、ファイル名に "-unknown" を追加
+				let fileNameBase = sanitizeTableName(tableName);
+				if (tableData.table instanceof Object && 'data' in tableData.table) {
+					fileNameBase += '-unknown';
+				}
+
+				const tableFileName = `${fileNameBase}.json`;
 				const tableFilePath = path.join(tablesDir, tableFileName);
 
 				fs.writeFileSync(tableFilePath, JSON.stringify(tableData, jsonReplacer, 2));

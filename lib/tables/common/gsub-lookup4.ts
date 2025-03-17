@@ -7,7 +7,7 @@
 
 import { DataReader } from '../../utils/data-reader';
 import { GsubLookupType, LigatureSubstitutionSubtable, LigatureSet, Ligature } from '../../types/tables/GSUB';
-import { parseCoverageTable } from './common';
+import { parseCoverageTable } from './gpos-gsub';
 
 /**
  * 合字置換サブテーブル（ルックアップタイプ4）を解析する

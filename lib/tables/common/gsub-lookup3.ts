@@ -7,7 +7,7 @@
 
 import { DataReader } from '../../utils/data-reader';
 import { GsubLookupType, AlternateSubstitutionSubtable } from '../../types/tables/GSUB';
-import { parseCoverageTable } from './common';
+import { parseCoverageTable } from './gpos-gsub';
 
 /**
  * 代替置換サブテーブル（ルックアップタイプ3）を解析する

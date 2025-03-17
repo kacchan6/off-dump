@@ -15,8 +15,8 @@ import {
 	ComponentRecord,
 	AnchorPoint
 } from '../../types/tables/GPOS';
-import { parseCoverageTable } from './common';
-import { parseAnchorTable } from './gpos-common';
+import { parseCoverageTable } from './gpos-gsub';
+import { parseAnchorTable } from './gpos';
 
 /**
  * マークアレイを解析する

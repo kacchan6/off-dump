@@ -2,6 +2,8 @@ import { ArrayBufferRef } from "../utils/array-buffer-ref";
 import { DataReader } from "../utils/data-reader";
 import { Font, TableDirectoryEntry } from "./font";
 import { BaseTable } from "./tables/BASE";
+import { Cff2Table } from "./tables/CFF2";
+import { CffTable } from "./tables/CFF_";
 import { CmapTable } from "./tables/cmap";
 import { DsigTable } from "./tables/DSIG";
 import { GposTable } from "./tables/GPOS";
@@ -45,6 +47,8 @@ export interface KnownTableTypeMap {
 	'GPOS': GposTable;
 	'GSUB': GsubTable;
 	'BASE': BaseTable;
+	'CFF ': CffTable;
+	'CFF2': Cff2Table;
 	// 他のテーブルの型をここに追加
 }
 

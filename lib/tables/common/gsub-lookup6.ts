@@ -14,7 +14,7 @@ import {
 	ChainingContextualSubstitutionFormat3Subtable,
 	SubstLookupRecord
 } from '../../types/tables/GSUB';
-import { parseCoverageTable, parseClassDefTable } from './common';
+import { parseCoverageTable, parseClassDefTable } from './gpos-gsub';
 
 /**
  * 置換ルックアップレコードを解析する

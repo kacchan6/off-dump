@@ -7,8 +7,8 @@
 
 import { DataReader } from '../../utils/data-reader';
 import { GposLookupType, SingleAdjustmentSubtable } from '../../types/tables/GPOS';
-import { parseCoverageTable } from './common';
-import { parseValueRecord } from './gpos-common';
+import { parseCoverageTable } from './gpos-gsub';
+import { parseValueRecord } from './gpos';
 
 /**
  * 単一位置調整サブテーブル（ルックアップタイプ1）を解析する

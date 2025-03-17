@@ -1,22 +1,21 @@
 /**
- * GPOS ルックアップタイプ4 - マークとベースの接続サブテーブル
- * アクセント記号などのマークグリフをベース文字に接続する位置情報を提供する
+ * GPOS ルックアップタイプ6 - マーク同士の接続サブテーブル
+ * アクセント記号などのマークグリフを他のマークグリフに接続する位置情報を提供する
  * 
- * 参照: https://learn.microsoft.com/ja-jp/typography/opentype/spec/gpos#lookuptype-4-mark-to-base-attachment-positioning-subtable
+ * 参照: https://learn.microsoft.com/ja-jp/typography/opentype/spec/gpos#lookuptype-6-mark-to-mark-attachment-positioning-subtable
  */
 
 import { DataReader } from '../../utils/data-reader';
 import {
 	GposLookupType,
-	MarkToBaseAttachmentSubtable,
+	MarkToMarkAttachmentSubtable,
 	MarkArrayTable,
-	MarkRecord,
-	BaseArrayTable,
-	BaseRecord,
+	Mark2ArrayTable,
+	Mark2Record,
 	AnchorPoint
 } from '../../types/tables/GPOS';
-import { parseCoverageTable } from './common';
-import { parseAnchorTable } from './gpos-common';
+import { parseCoverageTable } from './gpos-gsub';
+import { parseAnchorTable } from './gpos';
 
 /**
  * マークアレイを解析する
@@ -35,7 +34,7 @@ function parseMarkArray(reader: DataReader, offset: number, baseOffset: number):
 		reader.seek(offset);
 
 		const markCount = reader.readUInt16();
-		const markRecords: MarkRecord[] = [];
+		const markRecords = [];
 
 		for (let i = 0; i < markCount; i++) {
 			const markClass = reader.readUInt16();
@@ -74,20 +73,20 @@ function parseMarkArray(reader: DataReader, offset: number, baseOffset: number):
 }
 
 /**
- * ベースアレイを解析する
+ * マーク2アレイを解析する
  * 
  * @param reader データリーダー
- * @param offset ベースアレイへのオフセット
+ * @param offset マーク2アレイへのオフセット
  * @param markClassCount マーククラスの数
  * @param baseOffset ベースオフセット
- * @returns ベースアレイ
+ * @returns マーク2アレイ
  */
-function parseBaseArray(
+function parseMark2Array(
 	reader: DataReader,
 	offset: number,
 	markClassCount: number,
 	baseOffset: number
-): BaseArrayTable {
+): Mark2ArrayTable {
 	// 位置を保存
 	reader.save();
 
@@ -95,33 +94,32 @@ function parseBaseArray(
 		// オフセット位置に移動
 		reader.seek(offset);
 
-		const baseCount = reader.readUInt16();
-		const baseRecords: BaseRecord[] = [];
+		const mark2Count = reader.readUInt16();
+		const mark2Records: Mark2Record[] = [];
 
-		for (let i = 0; i < baseCount; i++) {
-			const baseAnchors: (AnchorPoint | null)[] = [];
+		for (let i = 0; i < mark2Count; i++) {
+			const mark2Anchors: (AnchorPoint | null)[] = [];
 
 			// 各マーククラスに対するアンカーポイントを読み取る
 			for (let j = 0; j < markClassCount; j++) {
-				const baseAnchorOffset = reader.readUInt16();
+				const mark2AnchorOffset = reader.readUInt16();
 
-				// オフセットが0でない場合のみアンカーテーブルを解析
-				if (baseAnchorOffset !== 0) {
-					const anchor = parseAnchorTable(reader, baseOffset + baseAnchorOffset);
-					baseAnchors.push(anchor || null);
+				if (mark2AnchorOffset !== 0) {
+					const anchor = parseAnchorTable(reader, baseOffset + mark2AnchorOffset);
+					mark2Anchors.push(anchor || null);
 				} else {
-					baseAnchors.push(null);
+					mark2Anchors.push(null);
 				}
 			}
 
-			baseRecords.push({
-				baseAnchors
+			mark2Records.push({
+				mark2Anchors
 			});
 		}
 
 		return {
-			baseCount,
-			baseRecords
+			mark2Count,
+			mark2Records
 		};
 	} finally {
 		// 位置を復元
@@ -130,16 +128,16 @@ function parseBaseArray(
 }
 
 /**
- * マークとベースの接続サブテーブル（ルックアップタイプ4）を解析する
+ * マーク同士の接続サブテーブル（ルックアップタイプ6）を解析する
  * 
  * @param reader データリーダー
  * @param offset サブテーブルへのオフセット
- * @returns マークとベースの接続サブテーブル
+ * @returns マーク同士の接続サブテーブル
  */
-export function parseMarkToBaseAttachmentSubtable(
+export function parseMarkToMarkAttachmentSubtable(
 	reader: DataReader,
 	offset: number
-): MarkToBaseAttachmentSubtable {
+): MarkToMarkAttachmentSubtable {
 	// 位置を保存
 	reader.save();
 
@@ -150,31 +148,31 @@ export function parseMarkToBaseAttachmentSubtable(
 		// 基本情報を読み取る（フォーマットは常に1）
 		const posFormat = reader.readUInt16();
 		if (posFormat !== 1) {
-			throw new Error(`対応していないマークとベースの接続フォーマット: ${posFormat}`);
+			throw new Error(`対応していないマーク同士の接続フォーマット: ${posFormat}`);
 		}
 
-		const markCoverageOffset = reader.readUInt16();
-		const baseCoverageOffset = reader.readUInt16();
+		const mark1CoverageOffset = reader.readUInt16();
+		const mark2CoverageOffset = reader.readUInt16();
 		const markClassCount = reader.readUInt16();
-		const markArrayOffset = reader.readUInt16();
-		const baseArrayOffset = reader.readUInt16();
+		const mark1ArrayOffset = reader.readUInt16();
+		const mark2ArrayOffset = reader.readUInt16();
 
 		// カバレッジテーブルを解析
-		const markCoverage = parseCoverageTable(reader, offset + markCoverageOffset);
-		const baseCoverage = parseCoverageTable(reader, offset + baseCoverageOffset);
+		const mark1Coverage = parseCoverageTable(reader, offset + mark1CoverageOffset);
+		const mark2Coverage = parseCoverageTable(reader, offset + mark2CoverageOffset);
 
-		// マークアレイとベースアレイを解析
-		const markArray = parseMarkArray(reader, offset + markArrayOffset, offset);
-		const baseArray = parseBaseArray(reader, offset + baseArrayOffset, markClassCount, offset);
+		// マーク1アレイとマーク2アレイを解析
+		const mark1Array = parseMarkArray(reader, offset + mark1ArrayOffset, offset);
+		const mark2Array = parseMark2Array(reader, offset + mark2ArrayOffset, markClassCount, offset);
 
 		return {
-			type: GposLookupType.MARK_TO_BASE_ATTACHMENT,
+			type: GposLookupType.MARK_TO_MARK_ATTACHMENT,
 			posFormat,
-			markCoverage,
-			baseCoverage,
+			mark1Coverage,
+			mark2Coverage,
 			markClassCount,
-			markArray,
-			baseArray
+			mark1Array,
+			mark2Array
 		};
 	} finally {
 		// 位置を復元

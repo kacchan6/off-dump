@@ -629,3 +629,207 @@ export const enum OpenTypeBaselineTag {
 	MATH = 'math', // 数式ベースライン
 	ROMN = 'romn', // ローマ字ベースライン
 }
+
+/**
+ * CFF (Compact Font Format) および CFF2 の共通型定義
+ * 参考:
+ * - https://learn.microsoft.com/en-us/typography/opentype/spec/cff
+ * - https://learn.microsoft.com/en-us/typography/opentype/spec/cff2
+ * - https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf
+ * - https://adobe-type-tools.github.io/font-tech-notes/pdfs/5177.Type2.pdf
+ */
+
+// 基本データ型の定義
+export type Card8 = number; // 8-bit unsigned integer
+export type Card16 = number; // 16-bit unsigned integer
+export type Card32 = number; // 32-bit unsigned integer
+export type OffSize = number; // 1, 2, 3, or 4 byte unsigned integer
+export type Offset = number; // 1, 2, 3, or 4 byte unsigned integer per OffSize
+export type SID = number; // 2-byte string identifier
+
+// サブルーチン索引
+export interface SubrIndex {
+	count: Card16;           // エントリー数
+	offSize: OffSize;        // オフセットのサイズ
+	offsets: Offset[];       // オフセット配列
+	subrs: Uint8Array[];     // サブルーチンデータの配列
+}
+
+// 辞書索引の構造
+export interface DictIndex {
+	count: Card16;           // エントリー数
+	offSize: OffSize;        // オフセットのサイズ
+	offsets: Offset[];       // オフセット配列
+	data: Uint8Array[];      // 辞書データの配列
+}
+
+// FDSelect形式
+export enum FDSelectFormat {
+	Format0 = 0,
+	Format3 = 3,
+	Format4 = 4
+}
+
+// フォーマット0 FDSelect
+export interface FDSelect0 {
+	format: FDSelectFormat.Format0;
+	fds: Card8[];           // グリフごとのFD
+}
+
+// フォーマット3 FDSelect
+export interface FDSelect3 {
+	format: FDSelectFormat.Format3;
+	nRanges: Card16;        // 範囲数
+	ranges: Array<{
+		first: Card16;        // 最初のグリフ
+		fd: Card8;            // FDインデックス
+	}>;
+	sentinel: Card16;       // 番兵値
+}
+
+// フォーマット4 FDSelect (CFF2)
+export interface FDSelect4 {
+	format: FDSelectFormat.Format4;
+	nRanges: Card32;        // 範囲数
+	ranges: Array<{
+		first: Card32;        // 最初のグリフ
+		fd: Card16;           // FDインデックス
+	}>;
+	sentinel: Card32;       // 番兵値
+}
+
+// FDSelectのユニオン型
+export type FDSelect = FDSelect0 | FDSelect3 | FDSelect4;
+
+// Private DICT 項目
+export interface PrivateDictEntry {
+	key: number;            // 演算子コード
+	value: number | number[]; // オペランド (単一または配列)
+}
+
+// Private DICT 共通フィールド
+export interface PrivateDictCommon {
+	blueValues?: number[];  // ブルー値
+	otherBlues?: number[];  // その他のブルー値
+	familyBlues?: number[]; // ファミリーブルー値
+	familyOtherBlues?: number[]; // ファミリーのその他のブルー値
+	blueScale?: number;     // ブルースケール
+	blueShift?: number;     // ブルーシフト
+	blueFuzz?: number;      // ブルーファズ
+	stdHW?: number;         // 標準水平幅
+	stdVW?: number;         // 標準垂直幅
+	stemSnapH?: number[];   // 水平ステムスナップ幅
+	stemSnapV?: number[];   // 垂直ステムスナップ幅
+	forceBold?: boolean;    // 強制ボールド
+	languageGroup?: number; // 言語グループ
+	expansionFactor?: number; // 拡張係数
+	initialRandomSeed?: number; // 初期ランダムシード
+	subrs?: Offset;         // サブルーチンのオフセット
+	defaultWidthX?: number; // デフォルト幅X
+	nominalWidthX?: number; // 公称幅X
+}
+
+// CharString 演算子
+export enum CharStringOperator {
+	// CFF1演算子
+	HSTEM = 1,
+	VSTEM = 3,
+	VMOVETO = 4,
+	RLINETO = 5,
+	HLINETO = 6,
+	VLINETO = 7,
+	RRCURVETO = 8,
+	CALLSUBR = 10,
+	RETURN = 11,
+	ESCAPE = 12,    // 2バイト演算子の1バイト目
+	ENDCHAR = 14,
+	HSTEMHM = 18,
+	HINTMASK = 19,
+	CNTRMASK = 20,
+	RMOVETO = 21,
+	HMOVETO = 22,
+	VSTEMHM = 23,
+	RCURVELINE = 24,
+	RLINECURVE = 25,
+	VVCURVETO = 26,
+	HHCURVETO = 27,
+	SHORTINT = 28,  // 2バイト整数の1バイト目
+	CALLGSUBR = 29,
+	VHCURVETO = 30,
+	HVCURVETO = 31,
+
+	// 拡張演算子 (ESCAPE の後に続く)
+	DOTSECTION = 0,
+	AND = 3,
+	OR = 4,
+	NOT = 5,
+	ABS = 9,
+	ADD = 10,
+	SUB = 11,
+	DIV = 12,
+	NEG = 14,
+	EQ = 15,
+	DROP = 18,
+	PUT = 20,
+	GET = 21,
+	IFELSE = 22,
+	RANDOM = 23,
+	MUL = 24,
+	SQRT = 26,
+	DUP = 27,
+	EXCH = 28,
+	INDEX = 29,
+	ROLL = 30,
+	HFLEX = 34,
+	FLEX = 35,
+	HFLEX1 = 36,
+	FLEX1 = 37,
+
+	// CFF2 固有の演算子
+	BLEND = 16
+}
+
+// CharString コマンド
+export type CharStringCommand = {
+	operator: CharStringOperator;
+	operands: number[];
+};
+
+// CharString プログラム
+export type CharStringProgram = CharStringCommand[];
+
+// 変数データストア (CFF2)
+export interface VariationStore {
+	format: Card16;         // フォーマット (常に1)
+	regionList: RegionList;
+	dataList: ItemVariationDataList;
+}
+
+export interface RegionList {
+	axisCount: Card16;      // 軸数
+	regionCount: Card16;    // 領域数
+	regions: Region[];      // 領域配列
+}
+
+export interface Region {
+	regionAxes: RegionAxis[]; // 各軸の領域情報
+}
+
+export interface RegionAxis {
+	startCoord: number;     // 開始座標
+	peakCoord: number;      // ピーク座標
+	endCoord: number;       // 終了座標
+}
+
+export interface ItemVariationDataList {
+	itemCount: Card16;      // アイテム数
+	itemVariationData: ItemVariationData[]; // データ配列
+}
+
+export interface ItemVariationData {
+	itemCount: Card16;      // アイテム数
+	shortDeltaCount: Card16; // 短いデルタの数
+	regionIndexCount: Card16; // 領域インデックス数
+	regionIndices: Card16[]; // 領域インデックス配列
+	deltaSet: number[][];   // デルタセット
+}

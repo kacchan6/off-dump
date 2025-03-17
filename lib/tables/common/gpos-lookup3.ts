@@ -7,8 +7,8 @@
 
 import { DataReader } from '../../utils/data-reader';
 import { CursiveAttachmentSubtable, EntryExitRecord, GposLookupType } from '../../types/tables/GPOS';
-import { parseCoverageTable } from './common';
-import { parseAnchorTable } from './gpos-common';
+import { parseCoverageTable } from './gpos-gsub';
+import { parseAnchorTable } from './gpos';
 
 /**
  * 筆記体接続サブテーブル（ルックアップタイプ3）を解析する

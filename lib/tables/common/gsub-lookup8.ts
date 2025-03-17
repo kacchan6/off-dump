@@ -10,7 +10,7 @@ import {
 	GsubLookupType,
 	ReverseChainSingleSubstitutionSubtable
 } from '../../types/tables/GSUB';
-import { parseCoverageTable } from './common';
+import { parseCoverageTable } from './gpos-gsub';
 
 /**
  * 逆連鎖文脈依存単一置換サブテーブル（ルックアップタイプ8）を解析する

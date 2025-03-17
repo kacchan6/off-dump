@@ -10,7 +10,7 @@ import {
 	GsubLookupType,
 	ExtensionSubstitutionSubtable
 } from '../../types/tables/GSUB';
-import { parseGsubSubtable } from './gsub-common';
+import { parseGsubSubtable } from './gsub';
 
 /**
  * 拡張置換サブテーブル（ルックアップタイプ7）を解析する

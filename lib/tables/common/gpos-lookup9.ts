@@ -10,7 +10,7 @@ import {
 	GposLookupType,
 	ExtensionPositioningSubtable
 } from '../../types/tables/GPOS';
-import { parseGposSubtable } from './gpos-common';
+import { parseGposSubtable } from './gpos';
 
 /**
  * 拡張位置調整サブテーブル（ルックアップタイプ9）を解析する

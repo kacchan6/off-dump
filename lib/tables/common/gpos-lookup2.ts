@@ -7,8 +7,8 @@
 
 import { ClassPairValueRecord, GposLookupType, PairAdjustmentSubtable, PairSetTable, PairValueRecord } from '../../types/tables/GPOS';
 import { DataReader } from '../../utils/data-reader';
-import { parseClassDefTable, parseCoverageTable } from './common';
-import { parseValueRecord } from './gpos-common';
+import { parseClassDefTable, parseCoverageTable } from './gpos-gsub';
+import { parseValueRecord } from './gpos';
 
 /**
  * ペア位置調整サブテーブル（ルックアップタイプ2）を解析する

@@ -18,7 +18,7 @@ import {
 	PosClassRule,
 	PosClassSet
 } from '../../types/tables/GPOS';
-import { parseCoverageTable, parseClassDefTable } from './common';
+import { parseCoverageTable, parseClassDefTable } from './gpos-gsub';
 
 /**
  * 位置調整ルックアップレコードを解析する

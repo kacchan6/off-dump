@@ -10,8 +10,8 @@ import { Font, TableDirectoryEntry } from '../types/font';
 import { GsubTable, GsubHeader, GsubVersion } from '../types/tables/GSUB';
 import {
 	parseScriptListTable, parseFeatureListTable, parseLookupListTable
-} from './gposgsub/common';
-import { parseGsubLookupTable } from './gposgsub/gsub-common';
+} from './common/gpos-gsub';
+import { parseGsubLookupTable } from './common/gsub';
 
 /**
  * GSUBテーブルをパースする

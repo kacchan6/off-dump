@@ -2,27 +2,29 @@
  * フォントテーブルのレジストリとパーサーのマッピング
  */
 
-import { DataReader } from '../utils/data-reader';
 import { Font, TableDirectoryEntry } from '../types/font';
+import { DataReader } from '../utils/data-reader';
 
 // テーブルパーサー
-import { parseHeadTable } from './head';
 import { TableParser, UnknownTable } from '../types/table';
-import { parseNameTable } from './name';
-import { parseCmapTable } from './cmap';
-import { parseHheaTable } from './hhea';
-import { parseOS2Table } from './OS_2';
-import { parsePostTable } from './post';
-import { parseMaxpTable } from './maxp';
-import { parseVheaTable } from './vhea';
-import { parseHmtxTable } from './hmtx';
-import { parseVmtxTable } from './vmtx';
 import { ArrayBufferRef } from '../utils/array-buffer-ref';
+import { parseBaseTable } from './BASE';
+import { parseCFF2Table } from './CFF2';
+import { parseCFFTable as parseCffTable } from './CFF_';
+import { parseCmapTable } from './cmap';
 import { parseDsigTable } from './DSIG';
-import { parseVorgTable } from './VORG';
 import { parseGposTable } from './GPOS';
 import { parseGsubTable } from './GSUB';
-import { parseBaseTable } from './BASE';
+import { parseHeadTable } from './head';
+import { parseHheaTable } from './hhea';
+import { parseHmtxTable } from './hmtx';
+import { parseMaxpTable } from './maxp';
+import { parseNameTable } from './name';
+import { parseOS2Table } from './OS_2';
+import { parsePostTable } from './post';
+import { parseVheaTable } from './vhea';
+import { parseVmtxTable } from './vmtx';
+import { parseVorgTable } from './VORG';
 
 /**
  * テーブル名とパーサー関数のマッピング
@@ -43,6 +45,8 @@ export const tableParsers: { [tag: string]: TableParser } = {
 	'GPOS': parseGposTable,
 	'GSUB': parseGsubTable,
 	'BASE': parseBaseTable,
+	'CFF ': parseCffTable,
+	'CFF2': parseCFF2Table,
 	// 他のテーブルのパーサーをここに追加
 };
 

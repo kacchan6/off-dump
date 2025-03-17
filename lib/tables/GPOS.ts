@@ -10,10 +10,10 @@ import { Font, TableDirectoryEntry } from '../types/font';
 import { GposTable, GposHeader, GposVersion } from '../types/tables/GPOS';
 import {
   parseScriptListTable, parseFeatureListTable, parseLookupListTable
-} from './gposgsub/common';
+} from './common/gpos-gsub';
 
 // GPOSルックアップ解析関数をインポート
-import { parseGposLookupTable } from './gposgsub/gpos-common';
+import { parseGposLookupTable } from './common/gpos';
 
 /**
  * GPOSテーブルをパースする

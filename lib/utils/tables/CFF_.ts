@@ -2,6 +2,7 @@
  * CFF (Compact Font Format) テーブル固有のユーティリティ関数
  */
 
+import { parseTopDict } from '../../tables/CFF_';
 import { Font } from '../../types/font';
 import { CffTable, NameIndex, StringIndex, Charset, Encoding, TopDict } from '../../types/tables/CFF_';
 import { CharsetFormat, EncodingFormat } from '../../types/tables/CFF_';
@@ -298,10 +299,15 @@ export function getTopDictSummary(topDict: TopDict, stringIndex: StringIndex): o
  * @returns 概要情報
  */
 export function getCffTableSummary(cff: CffTable): object {
+	// TopDictデータをパースする必要がある
+	// この部分は parseTopDict 関数を使用して Uint8Array から TopDict オブジェクトに変換する必要がある
+	const topDictData = cff.topDictIndex.data[0];
+	const topDict = parseTopDict(topDictData);
+
 	const info: Record<string, any> = {
 		version: `${cff.header.major}.${cff.header.minor}`,
 		names: getNameIndexSummary(cff.nameIndex),
-		topDict: getTopDictSummary(cff.topDictIndex.data[0], cff.stringIndex),
+		topDict: getTopDictSummary(topDict, cff.stringIndex),
 		strings: getStringIndexSummary(cff.stringIndex),
 		charStrings: getDictIndexSummary(cff.charStringsIndex),
 		globalSubrs: {
@@ -336,7 +342,6 @@ export function getCffTableSummary(cff: CffTable): object {
 
 	return info;
 }
-
 /**
  * フォントからCFFテーブルの概要情報を取得
  * 
@@ -372,9 +377,11 @@ export function exportCffData(font: Font): object | null {
 		return null;
 	}
 
+	const cffTable = font.tables['CFF_']?.table as CffTable | undefined;
+
 	return {
 		summary,
-		fontName: getFontName(font.tables['CFF_']?.table.nameIndex),
+		fontName: cffTable?.nameIndex ? getFontName(cffTable.nameIndex) : '',
 		isCIDKeyed: 'ros' in (summary as any).topDict,
 	};
 }

@@ -625,4 +625,340 @@ export function analyzeGlyphSymmetry(path: PathCommand[]): {
 	horizontalSymmetry: number;
 	verticalSymmetry: number;
 } {
-// 境界
+	// 境界ボックスを計算
+	const bbox = calculateBoundingBox(path);
+
+	// グリフに意味のあるサイズがない場合は対称とみなす
+	if (bbox.xMax === bbox.xMin || bbox.yMax === bbox.yMin) {
+		return {
+			horizontalSymmetry: 1,
+			verticalSymmetry: 1
+		};
+	}
+
+	// 水平方向および垂直方向の対称性スコアを初期化
+	let horizontalSymmetry = 1;
+	let verticalSymmetry = 1;
+
+	// 境界ボックスの中心を計算
+	const centerX = (bbox.xMax + bbox.xMin) / 2;
+	const centerY = (bbox.yMax + bbox.yMin) / 2;
+
+	// パス座標を正規化するための値
+	const width = bbox.xMax - bbox.xMin;
+	const height = bbox.yMax - bbox.yMin;
+
+	// 対称性を評価するためのサンプルポイント
+	const samplePoints: Array<{ x: number, y: number }> = [];
+
+	// パスからサンプルポイントを抽出
+	for (const cmd of path) {
+		switch (cmd.type) {
+			case 'M':
+			case 'L':
+				samplePoints.push({ x: cmd.x, y: cmd.y });
+				break;
+
+			case 'C':
+				// ベジエ曲線の制御点もサンプルとして使用
+				samplePoints.push({ x: cmd.x1, y: cmd.y1 });
+				samplePoints.push({ x: cmd.x2, y: cmd.y2 });
+				samplePoints.push({ x: cmd.x, y: cmd.y });
+				break;
+		}
+	}
+
+	// サンプルポイントが少なすぎる場合は対称と見なす
+	if (samplePoints.length < 4) {
+		return {
+			horizontalSymmetry: 1,
+			verticalSymmetry: 1
+		};
+	}
+
+	// 水平方向の対称性を評価
+	let hSymSum = 0;
+	let hSymCount = 0;
+
+	for (const point of samplePoints) {
+		// 点を中心に対して水平方向に反転した位置
+		const mirrorX = 2 * centerX - point.x;
+		const y = point.y;
+
+		// 反転した位置に近い点があるか探す
+		let minDist = Number.POSITIVE_INFINITY;
+
+		for (const otherPoint of samplePoints) {
+			const dx = otherPoint.x - mirrorX;
+			const dy = otherPoint.y - y;
+			const dist = Math.sqrt(dx * dx + dy * dy);
+
+			minDist = Math.min(minDist, dist);
+		}
+
+		// 距離を対称性スコアに変換（正規化）
+		const normalizedDist = minDist / Math.max(width, height);
+		const pointSym = Math.max(0, 1 - normalizedDist * 2);
+
+		hSymSum += pointSym;
+		hSymCount++;
+	}
+
+	// 垂直方向の対称性を評価
+	let vSymSum = 0;
+	let vSymCount = 0;
+
+	for (const point of samplePoints) {
+		// 点を中心に対して垂直方向に反転した位置
+		const x = point.x;
+		const mirrorY = 2 * centerY - point.y;
+
+		// 反転した位置に近い点があるか探す
+		let minDist = Number.POSITIVE_INFINITY;
+
+		for (const otherPoint of samplePoints) {
+			const dx = otherPoint.x - x;
+			const dy = otherPoint.y - mirrorY;
+			const dist = Math.sqrt(dx * dx + dy * dy);
+
+			minDist = Math.min(minDist, dist);
+		}
+
+		// 距離を対称性スコアに変換（正規化）
+		const normalizedDist = minDist / Math.max(width, height);
+		const pointSym = Math.max(0, 1 - normalizedDist * 2);
+
+		vSymSum += pointSym;
+		vSymCount++;
+	}
+
+	// 平均対称性スコアを計算
+	horizontalSymmetry = hSymCount > 0 ? hSymSum / hSymCount : 1;
+	verticalSymmetry = vSymCount > 0 ? vSymSum / vSymCount : 1;
+
+	// 結果を0〜1の範囲に制限
+	horizontalSymmetry = Math.max(0, Math.min(1, horizontalSymmetry));
+	verticalSymmetry = Math.max(0, Math.min(1, verticalSymmetry));
+
+	return {
+		horizontalSymmetry,
+		verticalSymmetry
+	};
+}
+
+/**
+ * グリフの対称性に関する詳細情報を取得
+ * 
+ * @param font フォントオブジェクト
+ * @param glyphId グリフID
+ * @returns 対称性の詳細情報
+ */
+export function getGlyphSymmetryInfo(font: Font, glyphId: number): object | null {
+	// フォントからグリフパスを抽出
+	const glyphPaths = extractGlyphPaths(font, { glyphIds: [glyphId] });
+	const glyphPath = glyphPaths.get(glyphId);
+
+	if (!glyphPath) {
+		return null;
+	}
+
+	// 対称性を分析
+	const symmetry = analyzeGlyphSymmetry(glyphPath.path);
+
+	// 境界ボックスを取得
+	const bbox = calculateBoundingBox(glyphPath.path);
+
+	// 結果をまとめる
+	return {
+		glyphId,
+		symmetry: {
+			horizontal: symmetry.horizontalSymmetry,
+			vertical: symmetry.verticalSymmetry,
+			overall: (symmetry.horizontalSymmetry + symmetry.verticalSymmetry) / 2,
+			isHighlySymmetric: symmetry.horizontalSymmetry > 0.8 || symmetry.verticalSymmetry > 0.8,
+			primaryAxis: symmetry.horizontalSymmetry > symmetry.verticalSymmetry ? 'horizontal' : 'vertical'
+		},
+		boundingBox: bbox,
+		dimensions: {
+			width: bbox.xMax - bbox.xMin,
+			height: bbox.yMax - bbox.yMin,
+			aspectRatio: (bbox.xMax - bbox.xMin) / (bbox.yMax - bbox.yMin)
+		}
+	};
+}
+
+/**
+ * フォント内の最も対称的なグリフを見つける
+ * 
+ * @param font フォントオブジェクト
+ * @param options オプション設定
+ * @returns 対称性でソートされたグリフの配列
+ */
+export function findMostSymmetricalGlyphs(
+	font: Font,
+	options: {
+		limit?: number;       // 返すグリフの数
+		minComplexity?: number; // 最低限の複雑さ（単純すぎるグリフを除外）
+		axis?: 'horizontal' | 'vertical' | 'both'; // 対称性の軸
+	} = {}
+): Array<{
+	glyphId: number;
+	horizontalSymmetry: number;
+	verticalSymmetry: number;
+	overallSymmetry: number;
+}> {
+	if (!hasCffOrCff2Table(font)) {
+		return [];
+	}
+
+	// すべてのグリフパスを取得
+	const glyphPaths = extractGlyphPaths(font);
+
+	// 結果配列
+	const results: Array<{
+		glyphId: number;
+		horizontalSymmetry: number;
+		verticalSymmetry: number;
+		overallSymmetry: number;
+		complexity: number;
+	}> = [];
+
+	// 各グリフの対称性を評価
+	for (const [glyphId, glyphPath] of glyphPaths.entries()) {
+		// 対称性を分析
+		const symmetry = analyzeGlyphSymmetry(glyphPath.path);
+
+		// 複雑さを計算（オプション）
+		const complexity = calculatePathComplexity(glyphPath.path);
+
+		// 最低限の複雑さをチェック
+		if (options.minComplexity !== undefined && complexity < options.minComplexity) {
+			continue;
+		}
+
+		// 全体的な対称性スコアを計算
+		let overallSymmetry = 0;
+
+		switch (options.axis) {
+			case 'horizontal':
+				overallSymmetry = symmetry.horizontalSymmetry;
+				break;
+			case 'vertical':
+				overallSymmetry = symmetry.verticalSymmetry;
+				break;
+			default:
+				// 'both' または未指定の場合は平均を取る
+				overallSymmetry = (symmetry.horizontalSymmetry + symmetry.verticalSymmetry) / 2;
+		}
+
+		results.push({
+			glyphId,
+			horizontalSymmetry: symmetry.horizontalSymmetry,
+			verticalSymmetry: symmetry.verticalSymmetry,
+			overallSymmetry,
+			complexity
+		});
+	}
+
+	// 対称性スコアでソート（降順）
+	results.sort((a, b) => b.overallSymmetry - a.overallSymmetry);
+
+	// 複雑さの情報を除去した結果を返す
+	const limit = options.limit || results.length;
+	return results.slice(0, limit).map(({ glyphId, horizontalSymmetry, verticalSymmetry, overallSymmetry }) => ({
+		glyphId,
+		horizontalSymmetry,
+		verticalSymmetry,
+		overallSymmetry
+	}));
+}
+
+/**
+ * フォント全体の対称性統計を分析
+ * 
+ * @param font フォントオブジェクト
+ * @returns 対称性統計情報
+ */
+export function analyzeSymmetryStatistics(font: Font): object | null {
+	if (!hasCffOrCff2Table(font)) {
+		return null;
+	}
+
+	// すべてのグリフパスを取得
+	const glyphPaths = extractGlyphPaths(font);
+
+	if (glyphPaths.size === 0) {
+		return null;
+	}
+
+	// 対称性の統計データ
+	const stats = {
+		horizontal: {
+			min: Number.POSITIVE_INFINITY,
+			max: Number.NEGATIVE_INFINITY,
+			sum: 0,
+			avg: 0,
+			highlySymmetrical: 0  // 0.8以上の高い対称性を持つグリフの数
+		},
+		vertical: {
+			min: Number.POSITIVE_INFINITY,
+			max: Number.NEGATIVE_INFINITY,
+			sum: 0,
+			avg: 0,
+			highlySymmetrical: 0
+		},
+		glyphCount: glyphPaths.size,
+		mostSymmetricalGlyphs: {
+			horizontal: [] as { glyphId: number, symmetry: number }[],
+			vertical: [] as { glyphId: number, symmetry: number }[]
+		}
+	};
+
+	// 水平方向の対称性データ
+	const horizontalSymmetries: { glyphId: number, symmetry: number }[] = [];
+
+	// 垂直方向の対称性データ
+	const verticalSymmetries: { glyphId: number, symmetry: number }[] = [];
+
+	// 各グリフの対称性を評価
+	for (const [glyphId, glyphPath] of glyphPaths.entries()) {
+		// 対称性を分析
+		const symmetry = analyzeGlyphSymmetry(glyphPath.path);
+
+		// 水平方向の統計を更新
+		stats.horizontal.min = Math.min(stats.horizontal.min, symmetry.horizontalSymmetry);
+		stats.horizontal.max = Math.max(stats.horizontal.max, symmetry.horizontalSymmetry);
+		stats.horizontal.sum += symmetry.horizontalSymmetry;
+
+		if (symmetry.horizontalSymmetry >= 0.8) {
+			stats.horizontal.highlySymmetrical++;
+		}
+
+		horizontalSymmetries.push({ glyphId, symmetry: symmetry.horizontalSymmetry });
+
+		// 垂直方向の統計を更新
+		stats.vertical.min = Math.min(stats.vertical.min, symmetry.verticalSymmetry);
+		stats.vertical.max = Math.max(stats.vertical.max, symmetry.verticalSymmetry);
+		stats.vertical.sum += symmetry.verticalSymmetry;
+
+		if (symmetry.verticalSymmetry >= 0.8) {
+			stats.vertical.highlySymmetrical++;
+		}
+
+		verticalSymmetries.push({ glyphId, symmetry: symmetry.verticalSymmetry });
+	}
+
+	// 平均を計算
+	stats.horizontal.avg = stats.horizontal.sum / stats.glyphCount;
+	stats.vertical.avg = stats.vertical.sum / stats.glyphCount;
+
+	// 最も対称的なグリフを上位5つ取得（水平）
+	horizontalSymmetries.sort((a, b) => b.symmetry - a.symmetry);
+	stats.mostSymmetricalGlyphs.horizontal = horizontalSymmetries.slice(0, 5);
+
+	// 最も対称的なグリフを上位5つ取得（垂直）
+	verticalSymmetries.sort((a, b) => b.symmetry - a.symmetry);
+	stats.mostSymmetricalGlyphs.vertical = verticalSymmetries.slice(0, 5);
+
+	return stats;
+}

@@ -179,7 +179,7 @@ function parseStringIndex(reader: DataReader, offset: number): StringIndex {
  * @param dictData TopDict辞書データバイト配列
  * @returns パースされたTopDictオブジェクト
  */
-function parseTopDict(dictData: Uint8Array): TopDict {
+export function parseTopDict(dictData: Uint8Array): TopDict {
 	const dict: TopDict = {};
 	const entries = parseDict(dictData);
 

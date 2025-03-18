@@ -47,7 +47,7 @@ export interface KnownTableTypeMap {
 	'GPOS': GposTable;
 	'GSUB': GsubTable;
 	'BASE': BaseTable;
-	'CFF ': CffTable;
+	'CFF_': CffTable;
 	'CFF2': Cff2Table;
 	// 他のテーブルの型をここに追加
 }
